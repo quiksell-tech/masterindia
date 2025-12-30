@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Admin\MiCompany;
+use App\Models\Admin\MiParty;
+use Illuminate\Http\Request;
+
+class MiPartyController extends Controller
+{
+    public function index()
+    {
+        $parties = MiParty::with('company')
+            ->orderBy('party_id', 'desc')
+            ->get();
+
+        return view('party.index', compact('parties'));
+    }
+
+    public function create()
+    {
+        $companies = MiCompany::orderBy('name')->get();
+        return view('party.create', compact('companies'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'company_id'       => 'required',
+            'party_trade_name'       => 'required',
+            'party_legal_name' => 'required',
+            'phone' => 'required',
+            'email' => 'required',
+            'contact_name' => 'required',
+            'is_active'        => 'required|in:Y,N',
+        ]);
+
+        MiParty::create($request->only([
+            'company_id',
+            'party_gstn',
+            'contact_name',
+            'party_trade_name',
+            'party_legal_name',
+            'phone',
+            'email',
+            'is_active'
+        ]));
+
+        return redirect()->route('party.index')->with('success', 'Party created successfully');
+    }
+
+    public function edit($id)
+    {
+        $party     = MiParty::findOrFail($id);
+        $companies = MiCompany::orderBy('name')->get();
+
+        return view('party.edit', compact('party', 'companies'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'company_id'       => 'required',
+            'party_trade_name'       => 'required',
+            'party_legal_name' => 'required',
+            'phone' => 'required',
+            'email' => 'required',
+            'contact_name' => 'required',
+            'is_active'        => 'required|in:Y,N',
+        ]);
+
+        $party = MiParty::findOrFail($id);
+        $party->update($request->only([
+            'company_id',
+            'party_gstn',
+            'party_trade_name',
+            'contact_name',
+            'party_legal_name',
+            'email',
+            'phone',
+            'is_active'
+        ]));
+
+        return redirect()->route('party.index')->with('success', 'Party updated successfully');
+    }
+
+}
