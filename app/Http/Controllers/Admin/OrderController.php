@@ -25,21 +25,21 @@ class OrderController extends Controller
             $totalTax       = 0;
             $totalAfterTax  = 0;
 
-            foreach ($order->items as $item) {
-
-                $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
-                $taxAmount     = ($taxableAmount * $item->tax_percentage) / 100;
-                $afterTax      = $taxableAmount + $taxAmount;
-
-                $totalSaleValue += $taxableAmount;
-                $totalTax       += $taxAmount;
-                $totalAfterTax  += $afterTax;
-            }
+//            foreach ($order->items as $item) {
+//
+//                $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
+//                $taxAmount     = ($taxableAmount * $item->tax_percentage) / 100;
+//                $afterTax      = $taxableAmount + $taxAmount;
+//
+//                $totalSaleValue += $taxableAmount;
+//                $totalTax       += $taxAmount;
+//                $totalAfterTax  += $afterTax;
+//            }
 
             // attach calculated values to model (runtime only)
-            $order->total_sale_value = round($totalSaleValue, 2);
-            $order->total_tax        = round($totalTax, 2);
-            $order->total_after_tax  = round($totalAfterTax, 2);
+//            $order->total_sale_value = round($totalSaleValue, 2);
+//            $order->total_tax        = round($totalTax, 2);
+//            $order->total_after_tax  = round($totalAfterTax, 2);
 
             return $order;
         });
