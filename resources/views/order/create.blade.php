@@ -6,7 +6,16 @@
 
         <div class="card">
             <div class="card-body">
-
+                @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 {{-- Order Flags --}}
                 <div class="row">
                     <div class="col-md-3">
@@ -25,13 +34,23 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3" id="order_invoice_div" style="display: none" >
-                        <label>Invoice No.</label>
-                        <input type="text" name="order_invoice_number" id="order_invoice_number" class="form-control mb-3">
+                    <div class="col-md-3" id="order_invoice_div" style="display:none;">
+                        <div class="form-group">
+                            <label>Invoice No.</label>
+                            <input type="text"
+                                   name="order_invoice_number"
+                                   id="order_invoice_number"
+                                   class="form-control mb-3">
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label>Document date</label>
-                        <input type="date" name="order_invoice_date" class="form-control mb-3">
+                        <div class="form-group">
+                            <label>Document Date</label>
+                            <input type="date"
+                                   name="order_invoice_date"
+                                   id="order_invoice_date"
+                                   class="form-control mb-3">
+                        </div>
                     </div>
 
                     <div class="col-md-3">
@@ -59,7 +78,7 @@
                         <select name="transporter_id" id="transporter_id" class="form-control" required>
                             <option value="" data-name="">Select Transporter</option>
                             @foreach($transporters as $val)
-                                <option value="{{ $val->transporter_gstn }}" data-name="{{$val->name}}">
+                                <option value="{{ $val->transporter_gstn }}" data-name="{{$val->name}}" {{ $val->transporter_id == '1' ? 'selected' : '' }}>
                                     {{ $val->transporter_gstn }}-{{$val->name}}
                                 </option>
                             @endforeach
@@ -67,14 +86,23 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label>Transporter Name</label>
-                        <input type="text" name="transporter_name" id="transporter_name" class="form-control mb-3">
+                        <div class="form-group">
+                            <label>Transporter Name</label>
+                            <input type="text"
+                                   name="transporter_name"
+                                   id="transporter_name"
+                                   class="form-control mb-3" value="self">
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label>Vehicle No</label>
-                        <input type="text" name="vehicle_no" class="form-control mb-3">
+                        <div class="form-group">
+                            <label>Vehicle No</label>
+                            <input type="text"
+                                   name="vehicle_no"
+                                   id="vehicle_no"
+                                   class="form-control mb-3">
+                        </div>
                     </div>
-
                     <div class="col-md-3">
                         <label>Transportation Mode</label>
                         <select name="transportation_mode" class="form-control mb-3">
@@ -387,6 +415,7 @@
                     { id: '#bill_from_address_id', message: 'Select Bill From Address' },
                     { id: '#bill_to_party_id', message: 'Select Bill To Party' },
                     { id: '#bill_to_address_id', message: 'Select Bill To Address' },
+                    { id: '#order_invoice_date', message: 'Select Invoice Date' }
                 ];
                 if (
                     $('#supply_type').val().toLowerCase() === 'inward' &&
@@ -397,6 +426,13 @@
                         message: 'Enter Order Invoice Number'
                     });
                 }
+                if ($('#transporter_id').val().toLowerCase() === 'no_gstn' ) {
+                    fields.push({
+                        id: '#vehicle_no',
+                        message: 'Please enter vehicle no'
+                    });
+                }
+
                 fields.forEach(field => {
                     let el = $(field.id);
 
