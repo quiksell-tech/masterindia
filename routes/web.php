@@ -101,4 +101,24 @@ Route::middleware('admin.auth')->group(function () {
     Route::get('/get-parties', [CompanyAddressController::class, 'getParty'])
         ->name('get.parties');
 
+
+    //EwayBill
+    Route::group(['prefix'=>'ewaybill', 'middleware'=>['access-token-check']], function () {
+        Route::post('generate', 'EwayBillController@generateEwayBill');
+        Route::post('cancel', 'EwayBillController@cancelEwayBill');
+        Route::post('details', 'EwayBillController@getEwayBillDetails');
+        Route::post('update', 'EwayBillController@updateEwayBill');
+        Route::post('api-count', 'EwayBillController@getApiCounts');
+    });
+
+    Route::group(['prefix'=>'einvoice', 'middleware'=>['access-token-check']], function () {
+        Route::post('generate', 'EInvoiceController@generateEInvoice');
+        Route::post('generate-credit-note', 'EInvoiceController@generateCreditNote');
+        Route::post('cancel', 'EInvoiceController@cancelEInvoice');
+        Route::post('get-details', 'EInvoiceController@getEInvoice');
+        Route::post('gstin-details', 'EInvoiceController@getGSTINDetails');
+        Route::post('sync-gstin-details', 'EInvoiceController@syncGSTINDetails');
+        Route::post('api-count', 'EInvoiceController@getApiCounts');
+    });
+
 });
