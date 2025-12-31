@@ -18,32 +18,6 @@ class OrderController extends Controller
     public function index()
     {
         $orders = MiOrder::with('items')->latest()->paginate(10);
-
-        $orders->getCollection()->transform(function ($order) {
-
-            $totalSaleValue = 0;
-            $totalTax       = 0;
-            $totalAfterTax  = 0;
-
-            foreach ($order->items as $item) {
-
-                $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
-                $taxAmount     = ($taxableAmount * $item->tax_percentage) / 100;
-                $afterTax      = $taxableAmount + $taxAmount;
-
-                $totalSaleValue += $taxableAmount;
-                $totalTax       += $taxAmount;
-                $totalAfterTax  += $afterTax;
-            }
-
-            // attach calculated values to model (runtime only)
-            $order->total_sale_value = round($totalSaleValue, 2);
-            $order->total_tax        = round($totalTax, 2);
-            $order->total_after_tax  = round($totalAfterTax, 2);
-
-            return $order;
-        });
-
         return view('order.index', compact('orders'));
     }
 
@@ -56,23 +30,28 @@ class OrderController extends Controller
     public function store(Request $request)
     {
 
-    $rules = [
-        'transporter_id'     => ['required', 'string'],
-        'order_invoice_date'     => ['required', 'string'],
-        'bill_from_party_id'   => ['required', 'integer'],
-        'bill_from_address_id' => ['required', 'integer'],
-        'bill_to_party_id'     => ['required', 'integer'],
-        'bill_to_address_id'   => ['required', 'integer'],
-        'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
-    ];
+        $rules = [
+            'transporter_id'     => ['required', 'string'],
+            'order_invoice_date'     => ['required', 'string'],
+            'bill_from_party_id'   => ['required', 'integer'],
+            'bill_from_address_id' => ['required', 'integer'],
+            'bill_to_party_id'     => ['required', 'integer'],
+            'bill_to_address_id'   => ['required', 'integer'],
+            'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
+            'vehicle_no' => [
+                Rule::requiredIf(fn () => strtolower($request->transporter_id) == 'NO_GSTN'),
+                'string',
+                'max:20'
+                ],
+            ];
 
-    // 🔁 Conditional validation for Inward
-    if (strtolower($request->supply_type) === 'inward') {
+        if (strtolower($request->supply_type) === 'inward') {
         $rules['order_invoice_number'] = ['required', 'string', 'max:50'];
-    }
+        }
+
         $validated = $request->validate($rules);
         $order = [];
-        $order['transporter_gstn']     = $validated['transporter_gstn'];
+        $order['transporter_id']     = $validated['transporter_id'];
         $order['bill_from_party_id']   = $validated['bill_from_party_id'];
         $order['bill_from_address_id'] = $validated['bill_from_address_id'];
         $order['bill_to_party_id']     = $validated['bill_to_party_id'];
@@ -80,9 +59,12 @@ class OrderController extends Controller
         $order['supply_type']          = $validated['supply_type'];
 
         if ($validated['supply_type'] === 'inward') {
+
             $order['order_invoice_number'] = $validated['order_invoice_number'];
+
         }else{
-            $order['bill_to_invoice_number'] = 'sasa'.rand(100000,999999);
+
+            $order['order_invoice_number'] = 'sasa'.rand(100000,999999);
         }
 
         $order['sub_supply_type'] =$request->sub_supply_type;
@@ -90,7 +72,7 @@ class OrderController extends Controller
         $order['transportation_mode'] =$request->transportation_mode;
         $order['vehicle_type'] =$request->vehicle_type;
         $order['vehicle_no'] =$request->vehicle_no;
-        $order['transporter_id'] =$request->transporter_id;
+        //$order['transporter_id'] =$request->transporter_id;
         $order['transporter_name'] =$request->transporter_name;
         $order['order_invoice_date'] =$request->order_invoice_date;
         $order['is_active'] ='Y';
@@ -141,13 +123,18 @@ class OrderController extends Controller
     {
         $rules = [
             'transporter_id'     => ['required', 'string'],
+            'order_invoice_date'    => ['required', 'string'],
+            'order_invoice_number'  => ['required', 'string', 'max:50'],
             'bill_from_party_id'   => ['required', 'integer'],
             'bill_from_address_id' => ['required', 'integer'],
             'bill_to_party_id'     => ['required', 'integer'],
             'bill_to_address_id'   => ['required', 'integer'],
-            'order_invoice_number'   => ['required', 'string'],
-            'order_invoice_date'   => ['required', 'string'],
             'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
+            'vehicle_no' => [
+                Rule::requiredIf(fn () => strtolower($request->transporter_id) == 'NO_GSTN'),
+                'string',
+                'max:20'
+            ],
         ];
 
 

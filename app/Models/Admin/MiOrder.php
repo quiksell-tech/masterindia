@@ -10,7 +10,7 @@ class MiOrder extends Model
     protected $table = 'mi_order';
     protected $primaryKey = 'order_id';
     public $timestamps = true;
-
+    protected $appends=['total_sale_value','total_tax','total_after_tax'];
     protected $fillable = [
         'order_invoice_number',
         'supply_type',
@@ -75,4 +75,57 @@ class MiOrder extends Model
     {
         return $this->hasMany(MiOrderItem::class, 'order_id', 'order_id');
     }
+    public function getTotalSaleValueAttribute($value)
+    {
+        $totalSaleValue = 0;
+        $totalTax       = 0;
+        $totalAfterTax  = 0;
+        foreach ($this->items as $item) {
+
+            $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
+            $taxAmount     = ($taxableAmount * $item->tax_percentage) / 100;
+            $afterTax      = $taxableAmount + $taxAmount;
+
+            $totalSaleValue += $taxableAmount;
+            $totalTax       += $taxAmount;
+            $totalAfterTax  += $afterTax;
+        }
+        return $totalSaleValue;
+    }
+    public function getTotalTaxAttribute($value)
+    {
+        $totalSaleValue = 0;
+        $totalTax       = 0;
+        $totalAfterTax  = 0;
+        foreach ($this->items as $item) {
+
+            $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
+            $taxAmount     = ($taxableAmount * $item->tax_percentage) / 100;
+            $afterTax      = $taxableAmount + $taxAmount;
+
+            $totalSaleValue += $taxableAmount;
+            $totalTax       += $taxAmount;
+            $totalAfterTax  += $afterTax;
+        }
+        return $totalTax;
+    }
+
+    public function getTotalAfterTaxAttribute($value)
+    {
+        $totalSaleValue = 0;
+        $totalTax       = 0;
+        $totalAfterTax  = 0;
+        foreach ($this->items as $item) {
+
+            $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
+            $taxAmount     = ($taxableAmount * $item->tax_percentage) / 100;
+            $afterTax      = $taxableAmount + $taxAmount;
+
+            $totalSaleValue += $taxableAmount;
+            $totalTax       += $taxAmount;
+            $totalAfterTax  += $afterTax;
+        }
+        return $totalAfterTax;
+    }
+
 }

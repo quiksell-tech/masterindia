@@ -10,6 +10,11 @@
     <script src="{{ asset('adminlte/dist/js/jquery.min.js') }}"></script>
     <!-- AdminLTE v4 -->
     <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+
 </head>
 
 <body class="layout-fixed sidebar-expand-lg">
