@@ -335,14 +335,14 @@
                             <input name="items[{{ $i }}][taxable_amount]"
                                    class="form-control taxable_amount"
                                    readonly
-                                   value="{{ $item->taxable_amount }}" readonly>
+                                   value="{{ $item->taxable_amount }}" >
                         </td>
 
                         <td>
                             <input name="items[{{ $i }}][after_tax_value]"
                                    class="form-control after_tax_value"
                                    readonly
-                                   value="{{ $item->after_tax_value }}" readonly>
+                                   value="{{ $item->after_tax_value }}" >
                         </td>
 
                         <td class="text-center">
