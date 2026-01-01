@@ -26,14 +26,19 @@ class MiPartyController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'company_id'       => 'required',
-            'party_trade_name'       => 'required',
-            'party_legal_name' => 'required',
-            'phone' => 'required',
-            'email' => 'required',
-            'contact_name' => 'required',
-            'is_active'        => 'required|in:Y,N',
+        $validated = $request->validate([
+            'company_id'        => ['required', 'exists:companies,company_id'],
+
+            'party_trade_name'  => ['required', 'string', 'max:255'],
+            'party_legal_name'  => ['required', 'string', 'max:255'],
+            'contact_name'      => ['required', 'string', 'max:255'],
+
+            'phone'             => ['required', 'digits:10'],
+            'email'             => ['required', 'email', 'max:255'],
+
+            'party_gstn'        => ['required', 'string', 'size:15'],
+
+            'is_active'         => ['required', 'in:Y,N'],
         ]);
 
         MiParty::create($request->only([
@@ -64,8 +69,8 @@ class MiPartyController extends Controller
             'company_id'       => 'required',
             'party_trade_name'       => 'required',
             'party_legal_name' => 'required',
-            'phone' => 'required',
-            'email' => 'required',
+            'phone'             => ['required', 'digits:10'],
+            'email'             => ['required', 'email', 'max:255'],
             'contact_name' => 'required',
             'is_active'        => 'required|in:Y,N',
         ]);

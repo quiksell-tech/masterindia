@@ -79,6 +79,9 @@ Route::middleware('admin.auth')->group(function () {
             ->name('orders.items.save');
         Route::delete('/items/{item}', [OrderItemController::class, 'destroy'])
             ->name('orders.items.delete');
+        Route::get('/{order}/invoice-data', [OrderController::class, 'invoiceData']);
+        Route::get('/{order}/generate-invoice', [OrderController::class, 'generateInvoice']);
+
         // AJAX
         Route::get('/party-search', [OrderController::class, 'searchParty'])->name('party.search');
         Route::get('/company-addresses/{companyId}', [OrderController::class, 'companyAddresses']);

@@ -282,6 +282,8 @@
                 <thead class="bg-light">
                 <tr>
                     <th width="220">Item</th>
+                    <th width="220">item_code</th>
+                    <th width="220">hsn_code</th>
                     <th>Qty</th>
                     <th>Unit</th>
                     <th>Price/Unit</th>
@@ -303,6 +305,8 @@
                                 @foreach($allItems as $it)
                                     <option value="{{ $it->item_id }}"
                                             data-tax_percentage="{{ $it->tax_percentage }}"
+                                            data-item_code="{{ $it->item_code }}"
+                                            data-hsn_code="{{ $it->hsn_code }}"
                                         {{ $it->item_id == $item->item_id ? 'selected' : '' }}>
                                         {{ $it->item_name }}
                                     </option>
@@ -310,6 +314,18 @@
                             </select>
                         </td>
 
+                        <td>
+                            <input name="items[{{ $i }}][item_code]"
+                                   class="form-control item_code"
+                                   type="text" step="any"
+                                   value="{{ $item->item_code }}">
+                        </td>
+                        <td>
+                            <input name="items[{{ $i }}][hsn_code]"
+                                   class="form-control hsn_code"
+                                   type="text" step="any"
+                                   value="{{ $item->hsn_code }}">
+                        </td>
                         <td>
                             <input name="items[{{ $i }}][total_item_quantity]"
                                    class="form-control qty"
@@ -558,50 +574,62 @@
         document.getElementById('addRow').addEventListener('click', function () {
 
             let row = `
-    <tr>
-        <td>
-            <select name="items[${rowIndex}][item_id]" class="form-control item-select">
-                <option value="">Select Item</option>
-                @foreach($allItems as $it)
+        <tr>
+            <td>
+                <select name="items[${rowIndex}][item_id]" class="form-control item-select">
+                    <option value="">Select Item</option>
+                    @foreach($allItems as $it)
             <option value="{{ $it->item_id }}"
-                        data-tax_percentage="{{ $it->tax_percentage }}">
-                        {{ $it->item_name }}
+                            data-tax_percentage="{{ $it->tax_percentage }}"
+                            data-item_code="{{ $it->item_code }}"
+                            data-hsn_code="{{ $it->hsn_code }}">
+                            {{ $it->item_name }}
             </option>
 @endforeach
             </select>
         </td>
 
         <td>
-            <input name="items[${rowIndex}][total_item_quantity]"
-                   class="form-control qty" type="number" step="any">
-        </td>
+            <input name="items[${rowIndex}][item_code]"
+                       class="form-control item_code" type="text" readonly>
+            </td>
 
-        <td>
-            <select name="items[${rowIndex}][item_unit]" class="form-control">
-                <option value="pieces">Pieces</option>
-                <option value="kg">Kg</option>
-            </select>
-        </td>
+            <td>
+                <input name="items[${rowIndex}][hsn_code]"
+                       class="form-control hsn_code" type="text" readonly>
+            </td>
 
-        <td>
-            <input name="items[${rowIndex}][tax_per_unit]"
-                   class="form-control rate" type="number" step="any">
-        </td>
+            <td>
+                <input name="items[${rowIndex}][total_item_quantity]"
+                       class="form-control qty" type="number" step="any">
+            </td>
 
-        <td>
-            <input name="items[${rowIndex}][taxable_amount]"
-                   class="form-control taxable_amount" readonly>
-        </td>
+            <td>
+                <select name="items[${rowIndex}][item_unit]" class="form-control">
+                    <option value="pieces">Pieces</option>
+                    <option value="kg">Kg</option>
+                </select>
+            </td>
 
-        <td>
-            <input name="items[${rowIndex}][after_tax_value]"
-                   class="form-control after_tax_value" readonly>
-        </td>
+            <td>
+                <input name="items[${rowIndex}][tax_per_unit]"
+                       class="form-control rate" type="number" step="any">
+            </td>
 
-        <td class="text-center">
-            <button type="button" class="btn btn-danger btn-sm remove-row">×</button>
-        </td>
-    </tr>`;
+            <td>
+                <input name="items[${rowIndex}][taxable_amount]"
+                       class="form-control taxable_amount" readonly>
+            </td>
+
+            <td>
+                <input name="items[${rowIndex}][after_tax_value]"
+                       class="form-control after_tax_value" readonly>
+            </td>
+
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm remove-row">×</button>
+            </td>
+        </tr>`;
 
             document.getElementById('itemRows').insertAdjacentHTML('beforeend', row);
             rowIndex++;
@@ -614,7 +642,7 @@
             }
         });
 
-        // CALCULATION (EVENT DELEGATION)
+        // CALCULATION + AUTO FILL
         document.addEventListener('input', function (e) {
 
             if (
@@ -628,9 +656,11 @@
                 let rate = parseFloat(row.querySelector('.rate')?.value) || 0;
 
                 let itemSelect = row.querySelector('.item-select');
-                let taxPercent = parseFloat(
-                    itemSelect?.selectedOptions[0]?.dataset.tax_percentage
-                ) || 0;
+                let selectedOption = itemSelect?.selectedOptions[0];
+
+                let taxPercent = parseFloat(selectedOption?.dataset.tax_percentage) || 0;
+                let itemCode   = selectedOption?.dataset.item_code || '';
+                let hsnCode    = selectedOption?.dataset.hsn_code || '';
 
                 let taxableAmount = qty * rate;
                 let taxAmount = (taxableAmount * taxPercent) / 100;
@@ -638,10 +668,10 @@
 
                 row.querySelector('.taxable_amount').value = taxableAmount.toFixed(2);
                 row.querySelector('.after_tax_value').value = afterTaxValue.toFixed(2);
+                row.querySelector('.item_code').value = itemCode;
+                row.querySelector('.hsn_code').value = hsnCode;
             }
         });
-
-
     </script>
 
 

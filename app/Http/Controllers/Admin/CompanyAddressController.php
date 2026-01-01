@@ -127,7 +127,7 @@ class CompanyAddressController extends Controller
         }
 
         $parties = MiParty::where('company_id', $companyId)
-            ->select('party_id', 'party_name as name')
+            ->select('party_id', 'party_trade_name as name')
             ->orderBy('name')
             ->get();
 

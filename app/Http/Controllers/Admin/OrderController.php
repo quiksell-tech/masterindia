@@ -118,7 +118,85 @@ class OrderController extends Controller
 
         return view('order.edit', compact('order', 'order','items','allItems','transporters'));
     }
+    public function invoiceData(MiOrder $order)
+    {
+        $order->load([
+            'billFromParty:party_id,party_trade_name,phone,email',
+            'billToParty:party_id,party_trade_name,phone,email',
+            'shipToParty:party_id,party_trade_name,phone,email',
+            'dispatchFromParty:party_id,party_trade_name,phone,email',
 
+            'billFromAddress',
+            'billToAddress',
+            'shipToAddress',
+            'dispatchFromAddress',
+        ]);
+
+        $orderData=[
+            'order_invoice_number'=>$order->order_invoice_number,
+            'transporter_name'=>$order->transporter_name,
+            'transporter_id'=>$order->transporter_id,
+            'supply_type'=>$order->supply_type,
+            'sub_supply_type'=>$order->sub_supply_type,
+            'document_type'=>$order->document_type,
+            'transportation_mode'=>$order->transportation_mode,
+            'order_invoice_date'=>$order->order_invoice_date,
+            'vehicle_type'=>$order->vehicle_type,
+            'vehicle_no'=>$order->vehicle_no,
+            'total_sale_value'=>$order->total_sale_value,
+            'total_tax'=>$order->total_tax,
+            'total_after_tax'=>$order->total_after_tax,
+
+            'bill_from' => $this->renderAddress(
+
+                $order->billFromParty->party_trade_name,
+                $order->billFromAddress->city,
+                $order->billFromAddress->state,
+                $order->billFromAddress->pincode,
+                $order->billFromAddress->address_line,
+                $order->billFromParty->email,
+                $order->billFromParty->phone
+            ),
+
+            'bill_to' => $this->renderAddress(
+                optional($order->billToParty)->party_trade_name,
+                optional($order->billToAddress)->city,
+                optional($order->billToAddress)->state,
+                optional($order->billToAddress)->pincode,
+                optional($order->billToAddress)->address_line,
+                optional($order->billToParty)->email,
+                optional($order->billToParty)->phone
+            ),
+
+
+            'ship_to' => $this->renderAddress(
+                optional($order->shipToParty)->party_trade_name,
+                optional($order->shipToAddress)->city,
+                optional($order->shipToAddress)->state,
+                optional($order->shipToAddress)->pincode,
+                optional($order->shipToAddress)->address_line,
+                optional($order->shipToParty)->email,
+                optional($order->shipToParty)->phone
+            ),
+
+
+            'dispatch_from' => $this->renderAddress(
+
+                optional($order->dispatchFromParty)->party_trade_name,
+                optional($order->dispatchFromAddress)->city,
+                optional($order->dispatchFromAddress)->state,
+                optional($order->dispatchFromAddress)->pincode,
+                optional($order->dispatchFromAddress)->address_line,
+                optional($order->dispatchFromParty)->email,
+                optional($order->dispatchFromParty)->phone
+            ),
+
+
+
+        ];
+
+        return response()->json($orderData);
+    }
     public function update(Request $request, MiOrder $order)
     {
         $rules = [
@@ -203,4 +281,25 @@ class OrderController extends Controller
         return MiCompanyAddress::where('company_id', $companyId)
             ->get(['address_id', 'address_line', 'city', 'state', 'pincode','party_id']);
     }
+    protected function renderAddress(
+        $name,
+        $city,
+        $state,
+        $pincode,
+        $address_line,
+        $email = null,
+        $phone = null
+    ) {
+        return view('order.address', [
+            'name'         => $name,
+            'address_line' => $address_line,
+            'city'         => $city,
+            'state'        => $state,
+            'pincode'      => $pincode,
+            'email'        => $email,
+            'phone'        => $phone,
+        ])->render();
+    }
+
+
 }
