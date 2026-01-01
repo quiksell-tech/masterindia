@@ -76,6 +76,12 @@
                                     <i class="fas fa-file-invoice"></i> Invoice
                                 </button>
                             </td>
+                            <td>
+                            <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
+                               class="btn btn-sm btn-danger">
+                                <i class="fas fa-file-pdf"></i> Invoice PDF
+                            </a>
+                            </td>
                         </tr>
                     @empty
                         <tr>
