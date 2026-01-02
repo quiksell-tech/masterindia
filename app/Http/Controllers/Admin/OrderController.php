@@ -60,7 +60,13 @@ class OrderController extends Controller
             ];
 
         if (strtolower($request->supply_type) === 'inward') {
-        $rules['order_invoice_number'] = ['required', 'string', 'max:50'];
+
+            $rules['order_invoice_number'] = [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('mi_orders', 'order_invoice_number'),
+            ];
         }
 
         $validated = $request->validate($rules);

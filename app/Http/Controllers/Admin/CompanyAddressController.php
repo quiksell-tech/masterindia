@@ -13,7 +13,7 @@ class CompanyAddressController extends Controller
 {
     public function index()
     {
-        $addresses = MiCompanyAddress::with('company')
+        $addresses = MiCompanyAddress::with('company','party')
             ->orderByDesc('address_id')
             ->paginate(10);
 

@@ -18,6 +18,8 @@ class InvoiceController extends Controller
             'billToAddress',
             'shipToParty',
             'shipToAddress',
+            'dispatchFromParty',
+            'dispatchFromAddress',
         ])->findOrFail($orderId);
 
         $pdf = Pdf::loadView('order.tax-invoice', compact('order'))
@@ -26,4 +28,5 @@ class InvoiceController extends Controller
         return $pdf->download('Invoice-'.$order->order_invoice_number.'.pdf');
         // OR ->stream() to preview in browser
     }
+
 }

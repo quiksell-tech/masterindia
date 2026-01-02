@@ -2,19 +2,19 @@
 
 return [
 
-    'name' => 'Master India Pvt Ltd',
+    'name' => 'RELCUBE INDIA PRIVATE LIMITED',
 
-    'gstin' => '09ABCDE1234F1Z9',
+    'gstin' => '06AAICR4029F1ZI',
 
-    'phone' => '9876543210',
+    'phone' => '+91-8802654141',
 
-    'email' => 'accounts@masterindia.in',
+    'email' => 'accounts@reown.in',
 
     'address' => [
-        'line'    => 'B-123, Sector 62',
-        'city'    => 'Noida',
-        'state'   => 'Uttar Pradesh',
-        'pincode' => '201301',
+        'line'    => 'Opposite Kirpal Ashram, Main Barsat Road,',
+        'city'    => 'Noorwala, Panipat',
+        'state'   => 'Haryana',
+        'pincode' => '132103',
     ],
 
 ];

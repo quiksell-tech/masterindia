@@ -24,12 +24,13 @@
                     <tr>
                         <th style="width: 80px">ID</th>
                         <th>Invoice No.</th>
-                        <th>total_sale_value</th>
-                        <th>total_tax</th>
-                        <th>total_after_tax</th>
-                        <th style="width: 140px">Order Date</th>
+                        <th>Total Sale</th>
+                        <th>Total Tax</th>
+                        <th>Total After Tax</th>
+                        <th style="width: 140px">Invoice Date</th>
                         <th style="width: 100px">Status</th>
-                        <th style="width: 100px">Action</th>
+                        <th style="width: 100px">Edit</th>
+                        <th colspan="2" class="text-center" style="width: 100px;">Action</th>
                     </tr>
                     </thead>
 
@@ -69,19 +70,21 @@
                                     <i class="fas fa-edit"></i>
                                 </a>
                             </td>
-                            <td>
-                                <button type="button"
-                                        class="btn btn-sm btn-info"
-                                        onclick="getInvoiceData({{ $order->order_id }})">
-                                    <i class="fas fa-file-invoice"></i> Invoice
-                                </button>
-                            </td>
-                            <td>
-                            <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
-                               class="btn btn-sm btn-danger">
-                                <i class="fas fa-file-pdf"></i> Invoice PDF
-                            </a>
-                            </td>
+
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-sm btn-info"
+                                                onclick="getInvoiceData({{ $order->order_id }})">
+                                            <i class="fas fa-file-invoice"></i> Invoice
+                                        </button>
+                                    </td>
+                                    <td>
+                                    <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
+                                       class="btn btn-sm btn-danger">
+                                        <i class="fas fa-file-pdf"></i> Invoice PDF
+                                    </a>
+                                    </td>
+
                         </tr>
                     @empty
                         <tr>
