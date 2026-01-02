@@ -75,8 +75,8 @@ class CompanyAddressController extends Controller
         $companies = MiCompany::where('is_active', 'Y')->get();
 
         $parties = MiParty::where('company_id', $address->company_id)
-            ->select('party_id', 'party_name as name')
-            ->orderBy('party_name')
+            ->select('party_id', 'name')
+            ->orderBy('name')
             ->get();
 
         return view('company_addresses.edit', compact(

@@ -44,11 +44,26 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>
+                                    <i class="fas fa-user-tag mr-1"></i> Party  Name
+                                </label>
+                                <input name="name"
+                                       class="form-control"
+                                       placeholder="Enter party name"
+                                       id="name"
+                                       required>
+                                <small class="text-danger d-none" id="error_name"></small>
+                            </div>
+
+                        </div>
+                        {{-- Party Trade Name --}}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>
                                     <i class="fas fa-user-tag mr-1"></i> Party Trade Name
                                 </label>
                                 <input name="party_trade_name"
                                        class="form-control"
-                                       placeholder="Enter party name"
+                                       placeholder="Enter party trade name"
                                        id="party_trade_name"
                                        required>
                                 <small class="text-danger d-none" id="error_party_trade_name"></small>
@@ -165,6 +180,7 @@
         const form = document.querySelector('form');
 
         const fields = {
+            name: 'Party  Name is required',
             party_trade_name: 'Party Trade Name is required',
             party_legal_name: 'Legal Name is required',
             contact_name: 'Contact Name is required',

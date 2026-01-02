@@ -27,17 +27,14 @@ class MiPartyController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'company_id'        => ['required', 'exists:companies,company_id'],
-
+            'company_id'       => 'required',
             'party_trade_name'  => ['required', 'string', 'max:255'],
             'party_legal_name'  => ['required', 'string', 'max:255'],
             'contact_name'      => ['required', 'string', 'max:255'],
-
+            'name'              => ['required', 'string', 'max:50'],
             'phone'             => ['required', 'digits:10'],
             'email'             => ['required', 'email', 'max:255'],
-
             'party_gstn'        => ['required', 'string', 'size:15'],
-
             'is_active'         => ['required', 'in:Y,N'],
         ]);
 
@@ -47,6 +44,7 @@ class MiPartyController extends Controller
             'contact_name',
             'party_trade_name',
             'party_legal_name',
+            'name',
             'phone',
             'email',
             'is_active'
@@ -67,8 +65,9 @@ class MiPartyController extends Controller
     {
         $request->validate([
             'company_id'       => 'required',
-            'party_trade_name'       => 'required',
+            'party_trade_name' => 'required',
             'party_legal_name' => 'required',
+            'name'              => ['required', 'string', 'max:50'],
             'phone'             => ['required', 'digits:10'],
             'email'             => ['required', 'email', 'max:255'],
             'contact_name' => 'required',
