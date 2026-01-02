@@ -31,6 +31,7 @@
                             <input type="text"
                                    name="order_invoice_number"
                                    id="order_invoice_number"
+                                   {{ $order->supply_type == 'outward' ? 'readonly' : '' }}
                                    class="form-control mb-3" value="{{$order->order_invoice_number}}">
                         </div>
                     </div>
@@ -80,7 +81,7 @@
 
                      <div class="col-md-3">
                         <div class="form-group">
-                            <label>Vehicle No</label>
+                            <label>Name</label>
                             <input type="text"
                                    name="transporter_name"
                                    id="transporter_name"
@@ -103,9 +104,9 @@
                         <label>Transportation Mode</label>
                         <select name="transportation_mode" class="form-control mb-3">
                             <option value="Road" {{ $order->transportation_mode == 'Road' ? 'selected' : '' }}>Road</option>
-                            <option value="Air" {{ $order->transportation_mode == 'Air' ? 'selected' : '' }}>Air</option>
-                            <option value="Rail" {{ $order->transportation_mode == 'Rail' ? 'selected' : '' }}>Rail</option>
-                            <option value="Ship" {{ $order->transportation_mode == 'Ship' ? 'selected' : '' }}>Ship+</option>
+                            <option value="Air" {{ $order->transportation_mode == 'Air' ? 'selected' : '' }} disabled>Air</option>
+                            <option value="Rail" {{ $order->transportation_mode == 'Rail' ? 'selected' : '' }}  disabled>Rail</option>
+                            <option value="Ship" {{ $order->transportation_mode == 'Ship' ? 'selected' : '' }} disabled>Ship+</option>
 
                         </select>
                     </div>
@@ -124,7 +125,7 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
@@ -142,7 +143,12 @@
                                     <select name="bill_from_address_id"
                                             id="bill_from_address_id"
                                             class="form-control" >
-                                        <option value="{{$order->bill_from_address_id}}">{{ $order->billFromAddress->address_line ?? '-' }}</option>
+                                        <option value="{{$order->bill_from_address_id}}">
+                                            {{ $order->billFromAddress->address_line ?? '-' }}
+                                            {{ $order->billFromAddress->city ?? '-' }}
+                                            {{ $order->billFromAddress->state ?? '-' }}
+                                            {{ $order->billFromAddress->pincode ?? '-' }}
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -160,7 +166,7 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
@@ -179,7 +185,12 @@
                                     <select name="bill_to_address_id"
                                             id="bill_to_address_id"
                                             class="form-control" required>
-                                        <option value="{{$order->bill_to_address_id}}">{{ $order->billToAddress->address_line ?? '-' }}</option>
+                                        <option value="{{$order->bill_to_address_id}}">
+                                            {{ $order->billToAddress->address_line ?? '-' }}
+                                            {{ $order->billToAddress->city?? '' }}
+                                            {{ $order->billToAddress->state?? '' }}
+                                            {{ $order->billToAddress->pincode?? '' }}
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -197,7 +208,7 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
@@ -215,7 +226,13 @@
                                     <select name="ship_to_address_id"
                                             id="ship_to_address_id"
                                             class="form-control">
-                                        <option value="{{$order->ship_to_address_id}}">{{ $order->shipToAddress->address_line ?? '-' }}</option>
+                                        <option value="{{$order->ship_to_address_id}}">
+                                            {{ $order->shipToAddress->address_line ?? '-' }}
+                                            {{ $order->shipToAddress->city ?? '-' }}
+                                            {{ $order->shipToAddress->state ?? '-' }}
+                                            {{ $order->shipToAddress->pincode ?? '-' }}
+
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -232,7 +249,7 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
@@ -250,7 +267,11 @@
                                     <select name="dispatch_from_address_id"
                                             id="dispatch_from_address_id"
                                             class="form-control">
-                                        <option value="{{$order->dispatch_from_address_id}}">{{ $order->dispatchFromAddress->address_line ?? '-' }}</option>
+                                        <option value="{{$order->dispatch_from_address_id}}">{{ $order->dispatchFromAddress->address_line ?? '-' }}
+                                            {{ $order->dispatchFromAddress->city ?? '-' }}
+                                            {{ $order->dispatchFromAddress->state ?? '-' }}
+                                            {{ $order->dispatchFromAddress->pincode ?? '-' }}
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -335,8 +356,8 @@
 
                         <td>
                             <select name="items[{{ $i }}][item_unit]" class="form-control">
-                                <option value="pieces" {{ $item->item_unit == 'pieces' ? 'selected' : '' }}>Pieces</option>
-                                <option value="kg" {{ $item->item_unit == 'kg' ? 'selected' : '' }}>Kg</option>
+                                <option value="PCS" {{ $item->item_unit == 'PCS' ? 'selected' : '' }}>PIECES</option>
+                                <option value="KGS" {{ $item->item_unit == 'KGS' ? 'selected' : '' }}>KILOGRAMS</option>
                             </select>
                         </td>
 
@@ -364,6 +385,7 @@
                         <td class="text-center">
                             <button type="button" class="btn btn-danger btn-sm remove-row">×</button>
                         </td>
+
                     </tr>
                 @endforeach
 
@@ -382,11 +404,32 @@
                     <i class="fas fa-save"></i> Save Items
                 </button>
             </div>
+            @if(count($items)>0)
+            <div class="mt-3 d-flex justify-content-end">
+                <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
+                   class="btn btn-sm btn-danger">
+                    <i class="fas fa-file-pdf"></i> Invoice PDF
+                </a>
+            </div>
+            @endif
         </div>
     </form>
 
 @endsection
+@section('style')
+    <style>
+        .party-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1050;
+            max-height: 220px;
+            overflow-y: auto;
+        }
 
+    </style>
+@endsection
 @section('scripts')
 
     <script>
@@ -430,7 +473,8 @@
 
                     $.get("{{ route('party.search') }}", { q: query }, function (data) {
 
-                        let list = '<ul class="list-group position-absolute w-10 party-list">';
+                        let list = '<ul class="list-group party-list">';
+
                         data.forEach(party => {
                             list += `
                         <li class="list-group-item party-item"
@@ -606,8 +650,8 @@
 
             <td>
                 <select name="items[${rowIndex}][item_unit]" class="form-control">
-                    <option value="pieces">Pieces</option>
-                    <option value="kg">Kg</option>
+                    <option value="PCS">PIECES</option>
+                    <option value="KGS" selected>KILOGRAMS</option>
                 </select>
             </td>
 

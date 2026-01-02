@@ -9,6 +9,7 @@ use App\Models\Admin\MiCompanyAddress;
 use App\Models\Admin\MiOrderItem;
 use App\Models\Admin\MiParty;
 use App\Models\Admin\MiTransporter;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -23,8 +24,20 @@ class OrderController extends Controller
 
     public function create()
     {
-        $transporters = MiTransporter::orderBy('name', 'desc')->get();;
-        return view('order.create', compact('transporters'));
+        $transporters = MiTransporter::orderBy('name', 'desc')->get();
+        $billFromAddress=MiCompanyAddress::where('address_id','1')->first();
+        $billFromParty=MiParty::where('party_id','1')->first();
+        // Get latest order_invoice_date
+        $latestDate = MiOrder::max('order_invoice_date');
+
+        if ($latestDate) {
+            // Add 1 day to latest date
+            $today = Carbon::parse($latestDate)->addDay()->toDateString();
+        } else {
+            // First order case
+            $today = Carbon::today()->toDateString();
+        }
+        return view('order.create', compact('transporters','billFromAddress','billFromParty','today'));
     }
 
     public function store(Request $request)
@@ -39,7 +52,8 @@ class OrderController extends Controller
             'bill_to_address_id'   => ['required', 'integer'],
             'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
             'vehicle_no' => [
-                Rule::requiredIf(fn () => strtolower($request->transporter_id) == 'NO_GSTN'),
+                'nullable',
+                Rule::requiredIf(fn () => $request->transporter_id == 'NO_GSTN'),
                 'string',
                 'max:20'
                 ],
@@ -209,7 +223,8 @@ class OrderController extends Controller
             'bill_to_address_id'   => ['required', 'integer'],
             'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
             'vehicle_no' => [
-                Rule::requiredIf(fn () => strtolower($request->transporter_id) == 'NO_GSTN'),
+                'nullable',
+                Rule::requiredIf(fn () => $request->transporter_id == 'NO_GSTN'),
                 'string',
                 'max:20'
             ],
@@ -279,7 +294,7 @@ class OrderController extends Controller
     public function companyAddresses($companyId)
     {
         return MiCompanyAddress::where('company_id', $companyId)
-            ->get(['address_id', 'address_line', 'city', 'state', 'pincode','party_id']);
+            ->where('is_active','Y')->get(['address_id', 'address_line', 'city', 'state', 'pincode','party_id']);
     }
     protected function renderAddress(
         $name,

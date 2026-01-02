@@ -107,7 +107,8 @@ class CompanyAddressController extends Controller
             'company_id'   => $request->company_id,
             'address_type' => $request->address_type,
             'address_line' => $request->address_line,
-            'party_id' => $request->party_id,
+            'is_active' => $request->is_active,
+            'party_id'     => $request->party_id,
             'city'         => $pincode->city_name,
             'state'        => $pincode->state_name,
             'state_code'   => $pincode->state_code,
@@ -127,6 +128,7 @@ class CompanyAddressController extends Controller
         }
 
         $parties = MiParty::where('company_id', $companyId)
+            ->where('is_active', 'Y')
             ->select('party_id', 'party_trade_name as name')
             ->orderBy('name')
             ->get();
