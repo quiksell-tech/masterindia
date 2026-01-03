@@ -3,7 +3,7 @@
 namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Carbon\Carbon;
 class MiOrder extends Model
 {
 
@@ -30,6 +30,8 @@ class MiOrder extends Model
         'bill_to_party_id',
         'dispatch_from_party_id',
         'vehicle_no',
+        'invoice_sequence_no',
+        'financial_year',
         'is_active',
     ];
     public function billFromParty()
@@ -127,5 +129,44 @@ class MiOrder extends Model
         }
         return $totalAfterTax;
     }
+    public static function getFinancialYearCode($date = null): string
+    {
+        $date = $date ? Carbon::parse($date) : now();
 
+        $year  = $date->year;
+        $month = $date->month;
+
+        if ($month >= 4) {
+            return substr($year, -2) . substr($year + 1, -2);
+        }
+
+        return substr($year - 1, -2) . substr($year, -2);
+    }
+
+    /**
+     * Generate Invoice Number
+     * Example: HREW-2526-00001
+     */
+    public static function generateInvoiceNumber(string $prefix = 'HREW'): array
+    {
+        $fy = self::getFinancialYearCode();
+
+        $lastSequence = self::where('financial_year', $fy)
+            ->max('invoice_sequence_no');
+
+        $nextSequence = $lastSequence ? $lastSequence + 1 : 1;
+
+        $invoiceNo = sprintf(
+            '%s-%s-%05d',
+            $prefix,
+            $fy,
+            $nextSequence
+        );
+
+        return [
+            'invoice_no'     => $invoiceNo,
+            'financial_year' => $fy,
+            'sequence_no'    => $nextSequence,
+        ];
+    }
 }

@@ -32,7 +32,7 @@ class OrderController extends Controller
 
         if ($latestDate) {
             // Add 1 day to latest date
-            $today = Carbon::parse($latestDate)->addDay()->toDateString();
+            $today = Carbon::parse($latestDate)->toDateString();
         } else {
             // First order case
             $today = Carbon::today()->toDateString();
@@ -84,7 +84,10 @@ class OrderController extends Controller
 
         }else{
 
-            $order['order_invoice_number'] = 'sasa'.rand(100000,999999);
+            $invoiceData = Miorder::generateInvoiceNumber();
+            $order['order_invoice_number'] =$invoiceData['invoice_no'];
+            $order['financial_year'] =$invoiceData['financial_year'];
+            $order['invoice_sequence_no'] =$invoiceData['sequence_no'];
         }
 
         $order['sub_supply_type'] =$request->sub_supply_type;
@@ -235,7 +238,22 @@ class OrderController extends Controller
                 'max:20'
             ],
         ];
+        if ($request->supply_type === 'outward') {
 
+            $rules['order_invoice_number'] = ['prohibited'];
+        }
+        if ($request->supply_type === 'inward') {
+
+            $rules['order_invoice_number'] = [
+                'required',
+                'string',
+                'max:50',
+
+                // UNIQUE except current record
+                Rule::unique('mi_order', 'order_invoice_number')
+                    ->ignore($order->id),
+            ];
+         }
 
         $validated = $request->validate($rules);
         $data = [];
@@ -245,7 +263,6 @@ class OrderController extends Controller
         $data['bill_to_party_id']     = $validated['bill_to_party_id'];
         $data['bill_to_address_id']   = $validated['bill_to_address_id'];
         $data['supply_type']          = $validated['supply_type'];
-        $data['order_invoice_number'] = $validated['order_invoice_number'];
         $data['order_invoice_date']   = $validated['order_invoice_date'];
 
         $data['sub_supply_type'] =$request->sub_supply_type;
@@ -258,6 +275,9 @@ class OrderController extends Controller
 
         $data['is_active'] ='Y';
 
+        if ($validated['supply_type'] === 'inward') {
+            $data['order_invoice_number'] = $validated['order_invoice_number'];
+        }
 
         if (!empty($request->dispatch_from_address_id)) {
 

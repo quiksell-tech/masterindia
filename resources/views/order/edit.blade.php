@@ -7,7 +7,16 @@
 
         <div class="card">
             <div class="card-body">
+                @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible">
 
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 {{-- Order Flags --}}
                 <div class="row">
                     <div class="col-md-3">
@@ -435,15 +444,29 @@
     <script>
 
         $(document).ready(function () {
+
             $('#supply_type').on('change', function () {
+
                 if ($(this).val() === 'inward') {
+
                     $('#order_invoice_div').slideDown();
+
+                    $('#order_invoice_number')
+                        .prop('readonly', false);
+                        //.val(''); // optional: clear auto value
+
                 } else {
-                    $('#order_invoice_div').slideUp();
-                    $('#order_invoice_number').val(''); // clear value
+
+                    $('#order_invoice_div').slideUp(); // optional
+
+                    $('#order_invoice_number')
+                        .prop('readonly', true);
                 }
             });
+
         });
+
+
         $(document).ready(function () {
 
             $('[name="transporter_id"]').on('change', function () {
