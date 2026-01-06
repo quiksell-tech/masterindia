@@ -12,7 +12,7 @@ class MiPartyController extends Controller
     public function index()
     {
         $parties = MiParty::with('company')
-            ->orderBy('party_id', 'desc')
+            ->orderBy('party_id', 'asc')
             ->get();
 
         return view('party.index', compact('parties'));
@@ -26,14 +26,16 @@ class MiPartyController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'company_id'       => 'required',
-            'party_trade_name'       => 'required',
-            'party_legal_name' => 'required',
-            'phone' => 'required',
-            'email' => 'required',
-            'contact_name' => 'required',
-            'is_active'        => 'required|in:Y,N',
+            'party_trade_name'  => ['required', 'string', 'max:255'],
+            'party_legal_name'  => ['required', 'string', 'max:255'],
+            'contact_name'      => ['required', 'string', 'max:255'],
+            'name'              => ['required', 'string', 'max:50'],
+            'phone'             => ['required', 'digits:10'],
+            'email'             => ['required', 'email', 'max:255'],
+            'party_gstn'        => ['required', 'string', 'size:15'],
+            'is_active'         => ['required', 'in:Y,N'],
         ]);
 
         MiParty::create($request->only([
@@ -42,6 +44,7 @@ class MiPartyController extends Controller
             'contact_name',
             'party_trade_name',
             'party_legal_name',
+            'name',
             'phone',
             'email',
             'is_active'
@@ -62,14 +65,18 @@ class MiPartyController extends Controller
     {
         $request->validate([
             'company_id'       => 'required',
-            'party_trade_name'       => 'required',
+            'party_trade_name' => 'required',
             'party_legal_name' => 'required',
-            'phone' => 'required',
-            'email' => 'required',
+            'name'              => ['required', 'string', 'max:50'],
+            'phone'             => ['required', 'digits:10'],
+            'email'             => ['required', 'email', 'max:255'],
             'contact_name' => 'required',
             'is_active'        => 'required|in:Y,N',
         ]);
-
+          if($id==1)
+          {
+              return redirect()->route('party.index')->with('success', 'Party updated successfully');
+          }
         $party = MiParty::findOrFail($id);
         $party->update($request->only([
             'company_id',
@@ -79,6 +86,7 @@ class MiPartyController extends Controller
             'party_legal_name',
             'email',
             'phone',
+            'name',
             'is_active'
         ]));
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CompanyAddressController;
+use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\MiCompanyController;
 use App\Http\Controllers\Admin\MiPartyController;
@@ -79,6 +80,11 @@ Route::middleware('admin.auth')->group(function () {
             ->name('orders.items.save');
         Route::delete('/items/{item}', [OrderItemController::class, 'destroy'])
             ->name('orders.items.delete');
+        Route::get('/{order}/invoice-data', [OrderController::class, 'invoiceData']);
+        Route::get('/{order}/generate-invoice', [OrderController::class, 'generateInvoice']);
+        Route::get('/{order}/invoice-pdf', [InvoiceController::class, 'generate'])
+            ->name('order.invoice.pdf');
+
         // AJAX
         Route::get('/party-search', [OrderController::class, 'searchParty'])->name('party.search');
         Route::get('/company-addresses/{companyId}', [OrderController::class, 'companyAddresses']);

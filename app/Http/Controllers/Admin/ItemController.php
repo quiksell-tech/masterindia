@@ -10,7 +10,7 @@ class ItemController extends Controller
 {
     public function index()
     {
-        $items = MiItem::orderByDesc('item_id')->paginate(10);
+        $items = MiItem::orderBy('item_id')->paginate(25);
         return view('items.index', compact('items'));
     }
 

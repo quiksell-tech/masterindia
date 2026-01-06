@@ -7,7 +7,7 @@
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-edit mr-1"></i>
-                    Edit Company Address
+                    Edit Party Address
                 </h3>
             </div>
 
@@ -37,7 +37,7 @@
 
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Party</label>
+                                <label>Party Name</label>
                                 <select name="party_id" id="party_id" class="form-control" required>
                                     <option value="">Select Party</option>
                                     @foreach($parties as $party)
@@ -50,20 +50,35 @@
                             </div>
                         </div>
                     </div>
-
-                    {{-- Address Type --}}
-                    <div class="form-group">
-                        <label>Address Type</label>
-                        <select name="address_type" class="form-control" required>
-                            <option value="office" {{ $address->address_type == 'office' ? 'selected' : '' }}>
-                                Office
-                            </option>
-                            <option value="shipping" {{ $address->address_type == 'shipping' ? 'selected' : '' }}>
-                                Shipping
-                            </option>
-                        </select>
+                    <div class="row">
+                        {{-- Address Type --}}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Address Type</label>
+                                <select name="address_type" class="form-control" required>
+                                    <option value="office" {{ $address->address_type == 'office' ? 'selected' : '' }}>
+                                        Office
+                                    </option>
+                                    <option value="shipping" {{ $address->address_type == 'shipping' ? 'selected' : '' }}>
+                                        Shipping
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Is Active</label>
+                                <select name="is_active" class="form-control" required>
+                                    <option value="Y" {{ $address->is_active == 'Y' ? 'selected' : '' }}>
+                                        Yes
+                                    </option>
+                                    <option value="N" {{ $address->is_active == 'N' ? 'selected' : '' }}>
+                                        No
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-
                     {{-- Address Line --}}
                     <div class="form-group">
                         <label>Address Line</label>

@@ -8,7 +8,7 @@
             <div class="card-body">
                 @if ($errors->any())
                     <div class="alert alert-danger alert-dismissible">
-                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+
                         <ul class="mb-0">
                             @foreach ($errors->all() as $error)
                                 <li>{{ $error }}</li>
@@ -30,7 +30,7 @@
                         <label>Sub Supply Type</label>
                         <select name="sub_supply_type" class="form-control mb-3">
                             <option value="supply" selected>Supply</option>
-                            <option value="export">Export</option>
+                            <option value="export" disabled>Export</option>
                         </select>
                     </div>
 
@@ -49,9 +49,13 @@
                             <input type="date"
                                    name="order_invoice_date"
                                    id="order_invoice_date"
-                                   class="form-control mb-3">
+                                   class="form-control mb-3"
+                                   value="{{ old('order_invoice_date', $defaultDate) }}"
+                                   min="{{ $latestDate }}"
+                                   max="{{ $lastDateOfMonth }}">
                         </div>
                     </div>
+
 
                     <div class="col-md-3">
                         <label>Document Type</label>
@@ -91,7 +95,7 @@
                             <input type="text"
                                    name="transporter_name"
                                    id="transporter_name"
-                                   class="form-control mb-3" value="self">
+                                   class="form-control mb-3" value="NO DETAIL">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -104,12 +108,30 @@
                         </div>
                     </div>
                     <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Transporter Document No</label>
+                            <input type="text"
+                                   name="transporter_document_no"
+                                   id="transporter_document_no"
+                                   class="form-control mb-3">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Transportation Date</label>
+                            <input type="date"
+                                   name="transportation_date"
+                                   id="transportation_date"
+                                   class="form-control mb-3">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <label>Transportation Mode</label>
                         <select name="transportation_mode" class="form-control mb-3">
                             <option value="Road" selected>Road</option>
-                            <option value="Air" >Air</option>
-                            <option value="Rail" >Rail</option>
-                            <option value="Ship" >Ship+</option>
+                            <option value="Air" disabled>Air</option>
+                            <option value="Rail" disabled>Rail</option>
+                            <option value="Ship" disabled >Ship+</option>
 
                         </select>
                     </div>
@@ -128,17 +150,20 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
                                            placeholder="Search Party / GSTN"
                                            data-target="bill_from_address_id"
-                                           data-party-input="bill_from_party_id">
+                                           data-party-input="bill_from_party_id"
+                                           value="{{$billFromParty->party_trade_name}}-{{$billFromParty->party_gstn}}" readonly>
 
                                     <input type="hidden"
                                            name="bill_from_party_id"
-                                           id="bill_from_party_id">
+                                           id="bill_from_party_id"
+                                           value="{{$billFromParty->party_id}}"
+                                    >
                                 </div>
 
                                 <div class="form-group mb-0">
@@ -146,7 +171,8 @@
                                     <select name="bill_from_address_id"
                                             id="bill_from_address_id"
                                             class="form-control">
-                                        <option value="">Select Party First</option>
+                                        <option value="{{$billFromAddress->address_id}}" selected>{{$billFromAddress->address_line}}-{{$billFromAddress->city}} {{$billFromAddress->state}}
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -164,7 +190,7 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
@@ -200,7 +226,7 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
@@ -235,7 +261,7 @@
                             </div>
 
                             <div class="card-body p-3">
-                                <div class="form-group">
+                                <div class="form-group position-relative">
                                     <label class="small text-muted">Party</label>
                                     <input type="text"
                                            class="form-control party-search"
@@ -276,6 +302,20 @@
 
 @endsection
 
+@section('style')
+    <style>
+        .party-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1050;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+    </style>
+@endsection
 @section('scripts')
 
     <script>
@@ -319,7 +359,7 @@
 
                     $.get("{{ route('party.search') }}", { q: query }, function (data) {
 
-                        let list = '<ul class="list-group position-absolute w-10 party-list">';
+                        let list = '<ul class="list-group party-list">';
                         data.forEach(party => {
                             list += `
                         <li class="list-group-item party-item"
@@ -453,7 +493,31 @@
             });
 
         });
+
+
     </script>
+    <script>
+        $(document).ready(function () {
+
+            function handleOutwardDateRule() {
+                let supplyType = $('#supply_type').val();
+                let today = $('#order_invoice_date').data('today');
+
+                if (supplyType === 'outward') {
+                    $('#order_invoice_date')
+                        .val(today)
+                        .attr('min', today);
+                } else {
+                    $('#order_invoice_date').removeAttr('min');
+                }
+            }
+
+            $('#supply_type').on('change', handleOutwardDateRule);
+            handleOutwardDateRule(); // page load
+        });
+    </script>
+
+
 
 
 @endsection

@@ -24,8 +24,9 @@
                     <tr>
                         <th style="width: 80px">ID</th>
                         <th>Company</th>
-                        <th>Party Trade Name</th>
-                        <th>Party Phone</th>
+                        <th>Trade Name</th>
+                        <th>Phone</th>
+                        <th>Email</th>
                         <th>GSTN</th>
                         <th style="width: 100px">Status</th>
                         <th style="width: 120px">Action</th>
@@ -42,6 +43,9 @@
                             </td>
                             <td>
                                 <strong>{{ $party->phone }}</strong>
+                            </td>
+                            <td>
+                                <strong>{{ $party->email }}</strong>
                             </td>
                             <td>{{ $party->party_gstn ?? '-' }}</td>
                             <td>

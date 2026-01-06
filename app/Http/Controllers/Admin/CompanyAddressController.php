@@ -13,9 +13,9 @@ class CompanyAddressController extends Controller
 {
     public function index()
     {
-        $addresses = MiCompanyAddress::with('company')
-            ->orderByDesc('address_id')
-            ->paginate(10);
+        $addresses = MiCompanyAddress::with('company','party')
+            ->orderBy('address_id')
+            ->paginate(25);
 
         return view('company_addresses.index', compact('addresses'));
     }
@@ -75,8 +75,8 @@ class CompanyAddressController extends Controller
         $companies = MiCompany::where('is_active', 'Y')->get();
 
         $parties = MiParty::where('company_id', $address->company_id)
-            ->select('party_id', 'party_name as name')
-            ->orderBy('party_name')
+            ->select('party_id', 'name')
+            ->orderBy('name')
             ->get();
 
         return view('company_addresses.edit', compact(
@@ -102,12 +102,17 @@ class CompanyAddressController extends Controller
         if (!$pincode) {
             return back()->withErrors(['pincode' => 'Invalid pincode']);
         }
-
+        if($id=='1')
+        {
+            return redirect()->route('company-addresses.index')
+                ->with('success', 'Address updated successfully');
+        }
         $address->update([
             'company_id'   => $request->company_id,
             'address_type' => $request->address_type,
             'address_line' => $request->address_line,
-            'party_id' => $request->party_id,
+            'is_active' => $request->is_active,
+            'party_id'     => $request->party_id,
             'city'         => $pincode->city_name,
             'state'        => $pincode->state_name,
             'state_code'   => $pincode->state_code,
@@ -127,7 +132,8 @@ class CompanyAddressController extends Controller
         }
 
         $parties = MiParty::where('company_id', $companyId)
-            ->select('party_id', 'party_name as name')
+            ->where('is_active', 'Y')
+            ->select('party_id', 'party_trade_name as name')
             ->orderBy('name')
             ->get();
 

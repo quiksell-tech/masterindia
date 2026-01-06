@@ -9,7 +9,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title">
                     <i class="fas fa-map-marker-alt mr-1"></i>
-                    Company Addresses
+                    Party Addresses
                 </h3>
 
                 <a href="{{ route('company-addresses.create') }}"
@@ -25,6 +25,7 @@
                     <tr>
                         <th style="width: 70px">ID</th>
                         <th>Company</th>
+                        <th>Party Name</th>
                         <th style="width: 90px">Type</th>
                         <th>Address</th>
                         <th>City</th>
@@ -39,6 +40,7 @@
                         <tr>
                             <td>{{ $row->address_id }}</td>
                             <td>{{ $row->company->name ?? '-' }}</td>
+                            <td>{{ $row->party->name ?? '-' }}</td>
 
                             <td>
                             <span class="">

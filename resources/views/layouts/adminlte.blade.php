@@ -16,7 +16,7 @@
 
 
 </head>
-
+@yield('style')
 <body class="layout-fixed sidebar-expand-lg">
 <div class="app-wrapper">
 

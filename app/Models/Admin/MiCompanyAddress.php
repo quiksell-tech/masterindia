@@ -26,6 +26,10 @@ class MiCompanyAddress extends Model
     {
         return $this->belongsTo(MiCompany::class, 'company_id');
     }
+    public function party()
+    {
+        return $this->belongsTo(MiParty::class, 'party_id');
+    }
 
     public function pincodeMaster()
     {

@@ -10,7 +10,7 @@ class TransporterController extends Controller
 {
     public function index()
     {
-        $transporters = MiTransporter::orderBy('name', 'desc')->paginate(10);
+        $transporters = MiTransporter::orderBy('transporter_id', 'asc')->paginate(10);
         return view('transporters.index', compact('transporters'));
     }
 
@@ -46,6 +46,12 @@ class TransporterController extends Controller
 
     public function update(Request $request, $id)
     {
+        if($id==1 || $id==2){
+            // used as fixed transporter
+            return redirect()
+                ->route('transporters.index')
+                ->with('success', 'Transporter updated successfully');
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'transporter_gstn' => 'nullable|string|max:20',
@@ -53,6 +59,7 @@ class TransporterController extends Controller
         ]);
 
         $transporter = MiTransporter::findOrFail($id);
+
         $transporter->update($request->only([
             'name',
             'transporter_gstn',
