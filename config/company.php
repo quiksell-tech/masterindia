@@ -6,9 +6,9 @@ return [
 
     'gstin' => '06AAICR4029F1ZI',
 
-    'phone' => '+91-8802654141',
+    'phone' => '+91-8595945121',
 
-    'email' => 'accounts@reown.in',
+    'email' => 'sales-support@recycledevice.com',
 
     'address' => [
         'line'    => 'Opposite Kirpal Ashram, Main Barsat Road,',

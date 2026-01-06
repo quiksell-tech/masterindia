@@ -27,6 +27,7 @@ class OrderController extends Controller
         $transporters = MiTransporter::orderBy('name', 'desc')->get();
         $billFromAddress=MiCompanyAddress::where('address_id','1')->first();
         $billFromParty=MiParty::where('party_id','1')->first();
+
         // Get latest order_invoice_date
         $latestDate = MiOrder::max('order_invoice_date');
 
@@ -98,6 +99,8 @@ class OrderController extends Controller
         //$order['transporter_id'] =$request->transporter_id;
         $order['transporter_name'] =$request->transporter_name;
         $order['order_invoice_date'] =$request->order_invoice_date;
+        $order['transporter_document_no'] =$request->transporter_document_no;
+        $order['transportation_date'] =$request->transportation_date;
         $order['is_active'] ='Y';
 
 
@@ -238,10 +241,7 @@ class OrderController extends Controller
                 'max:20'
             ],
         ];
-        if ($request->supply_type === 'outward') {
 
-            $rules['order_invoice_number'] = ['prohibited'];
-        }
         if ($request->supply_type === 'inward') {
 
             $rules['order_invoice_number'] = [
@@ -272,7 +272,8 @@ class OrderController extends Controller
         $data['vehicle_no'] =$request->vehicle_no;
 
         $data['transporter_name'] =$request->transporter_name;
-
+        $order['transporter_document_no'] =$request->transporter_document_no;
+        $order['transportation_date'] =$request->transportation_date;
         $data['is_active'] ='Y';
 
         if ($validated['supply_type'] === 'inward') {

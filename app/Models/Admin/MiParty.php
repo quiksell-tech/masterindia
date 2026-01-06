@@ -17,6 +17,7 @@ class MiParty extends Model
         'contact_name',
         'phone',
         'email',
+        'name',
         'is_active'
     ];
     public function company()

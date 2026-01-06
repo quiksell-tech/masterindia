@@ -73,7 +73,10 @@ class MiPartyController extends Controller
             'contact_name' => 'required',
             'is_active'        => 'required|in:Y,N',
         ]);
-
+          if($id==1)
+          {
+              return redirect()->route('party.index')->with('success', 'Party updated successfully');
+          }
         $party = MiParty::findOrFail($id);
         $party->update($request->only([
             'company_id',
@@ -83,6 +86,7 @@ class MiPartyController extends Controller
             'party_legal_name',
             'email',
             'phone',
+            'name',
             'is_active'
         ]));
 

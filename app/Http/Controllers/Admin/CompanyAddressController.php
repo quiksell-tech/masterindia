@@ -102,7 +102,11 @@ class CompanyAddressController extends Controller
         if (!$pincode) {
             return back()->withErrors(['pincode' => 'Invalid pincode']);
         }
-
+        if($id=='1')
+        {
+            return redirect()->route('company-addresses.index')
+                ->with('success', 'Address updated successfully');
+        }
         $address->update([
             'company_id'   => $request->company_id,
             'address_type' => $request->address_type,

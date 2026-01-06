@@ -110,6 +110,26 @@
                         </div>
                     </div>
                     <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Transporter Document No</label>
+                            <input type="text"
+                                   name="transporter_document_no"
+                                   id="transporter_document_no"
+                                   class="form-control mb-3"
+                                   value="{{$order->transporter_document_no}}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Transportation Date</label>
+                            <input type="date"
+                                   name="transportation_date"
+                                   id="transportation_date"
+                                   class="form-control mb-3"
+                                   value="{{$order->transportation_date}}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <label>Transportation Mode</label>
                         <select name="transportation_mode" class="form-control mb-3">
                             <option value="Road" {{ $order->transportation_mode == 'Road' ? 'selected' : '' }}>Road</option>

@@ -32,6 +32,8 @@ class MiOrder extends Model
         'vehicle_no',
         'invoice_sequence_no',
         'financial_year',
+        'transportation_date',
+        'transporter_document_no',
         'is_active',
     ];
     public function billFromParty()

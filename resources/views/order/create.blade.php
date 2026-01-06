@@ -105,6 +105,24 @@
                         </div>
                     </div>
                     <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Transporter Document No</label>
+                            <input type="text"
+                                   name="transporter_document_no"
+                                   id="transporter_document_no"
+                                   class="form-control mb-3">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Transportation Date</label>
+                            <input type="date"
+                                   name="transportation_date"
+                                   id="transportation_date"
+                                   class="form-control mb-3">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <label>Transportation Mode</label>
                         <select name="transportation_mode" class="form-control mb-3">
                             <option value="Road" selected>Road</option>
@@ -136,7 +154,7 @@
                                            placeholder="Search Party / GSTN"
                                            data-target="bill_from_address_id"
                                            data-party-input="bill_from_party_id"
-                                           value="{{$billFromParty->party_trade_name}}-{{$billFromParty->party_gstn}}">
+                                           value="{{$billFromParty->party_trade_name}}-{{$billFromParty->party_gstn}}" readonly>
 
                                     <input type="hidden"
                                            name="bill_from_party_id"

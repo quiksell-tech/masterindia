@@ -110,17 +110,17 @@
                 <strong>Place of Supply:</strong> {{ $order->dispatchFromAddress->state }}<br>
                 <strong>Place of Supply:</strong> {{ $order->dispatchFromAddress->state_code }}
             @else
-                <strong>Name:</strong> {{ $order->billFromParty->party_trade_name }}<br>
-                <strong>Mobile:</strong> {{ $order->billFromParty->phone }}<br>
-                <strong>Email:</strong> {{ $order->billFromParty->email }}<br>
-                <strong>GST:</strong> {{ $order->billFromParty->party_gstn }}<br>
-                <strong>Address:</strong>
+{{--                <strong>Name:</strong> {{ $order->billFromParty->party_trade_name }}<br>--}}
+{{--                <strong>Mobile:</strong> {{ $order->billFromParty->phone }}<br>--}}
+{{--                <strong>Email:</strong> {{ $order->billFromParty->email }}<br>--}}
+{{--                <strong>GST:</strong> {{ $order->billFromParty->party_gstn }}<br>--}}
+{{--                <strong>Address:</strong>--}}
 
-                {{ $order->billFromAddress->address_line }}<br>
-                {{ $order->billFromAddress->city }},
-                {{ $order->billFromAddress->state }} - {{ $order->billFromAddress->pincode }}<br>
-                <strong>Place of Supply:</strong> {{ $order->billFromAddress->state }}<br>
-                <strong>Place of Supply:</strong> {{ $order->billFromAddress->state_code }}
+{{--                {{ $order->billFromAddress->address_line }}<br>--}}
+{{--                {{ $order->billFromAddress->city }},--}}
+{{--                {{ $order->billFromAddress->state }} - {{ $order->billFromAddress->pincode }}<br>--}}
+{{--                <strong>Place of Supply:</strong> {{ $order->billFromAddress->state }}<br>--}}
+{{--                <strong>Place of Supply:</strong> {{ $order->billFromAddress->state_code }}--}}
         @endif
         </td>
         <td></td>
@@ -132,8 +132,9 @@
 <table>
     <thead>
     <tr>
-        <th>#</th>
+        <th>S.No</th>
         <th>HSN</th>
+        <th>ItmCode</th>
         <th>Name</th>
         <th>Description</th>
         <th>Qty</th>
@@ -146,6 +147,7 @@
         <tr>
             <td>{{ $i+1 }}</td>
             <td>{{ $item->hsn_code }}</td>
+            <td>{{ $item->item_code }}</td>
             <td>{{ $item->item_name }}</td>
             <td>{{ $item->item_description }}</td>
             <td class="right">{{ $item->total_item_quantity }}</td>
