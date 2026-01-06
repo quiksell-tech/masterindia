@@ -10,7 +10,7 @@ class TransporterController extends Controller
 {
     public function index()
     {
-        $transporters = MiTransporter::orderBy('name', 'desc')->paginate(10);
+        $transporters = MiTransporter::orderBy('transporter_id', 'asc')->paginate(10);
         return view('transporters.index', compact('transporters'));
     }
 

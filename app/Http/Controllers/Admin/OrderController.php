@@ -31,14 +31,21 @@ class OrderController extends Controller
         // Get latest order_invoice_date
         $latestDate = MiOrder::max('order_invoice_date');
 
+        $today = now()->format('Y-m-d');
+        $lastDateOfMonth = now()->endOfMonth()->format('Y-m-d');
+
         if ($latestDate) {
-            // Add 1 day to latest date
-            $today = Carbon::parse($latestDate)->toDateString();
+            // ✅ Use latest invoice date as-is
+            $latestDate = Carbon::parse($latestDate)->format('Y-m-d');
         } else {
-            // First order case
-            $today = Carbon::today()->toDateString();
+            // ✅ First order case
+            $latestDate = Carbon::today()->format('Y-m-d');
         }
-        return view('order.create', compact('transporters','billFromAddress','billFromParty','today'));
+
+        $defaultDate = $today < $latestDate ? $latestDate : $today;
+
+
+        return view('order.create', compact('transporters','billFromAddress','billFromParty','today','latestDate','lastDateOfMonth','defaultDate'));
     }
 
     public function store(Request $request)

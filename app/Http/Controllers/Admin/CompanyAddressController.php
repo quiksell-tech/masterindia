@@ -14,8 +14,8 @@ class CompanyAddressController extends Controller
     public function index()
     {
         $addresses = MiCompanyAddress::with('company','party')
-            ->orderByDesc('address_id')
-            ->paginate(10);
+            ->orderBy('address_id')
+            ->paginate(25);
 
         return view('company_addresses.index', compact('addresses'));
     }

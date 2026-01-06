@@ -12,7 +12,7 @@ class MiPartyController extends Controller
     public function index()
     {
         $parties = MiParty::with('company')
-            ->orderBy('party_id', 'desc')
+            ->orderBy('party_id', 'asc')
             ->get();
 
         return view('party.index', compact('parties'));

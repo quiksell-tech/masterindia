@@ -50,9 +50,12 @@
                                    name="order_invoice_date"
                                    id="order_invoice_date"
                                    class="form-control mb-3"
-                                    data-today="{{ $today }}" >
+                                   value="{{ old('order_invoice_date', $defaultDate) }}"
+                                   min="{{ $latestDate }}"
+                                   max="{{ $lastDateOfMonth }}">
                         </div>
                     </div>
+
 
                     <div class="col-md-3">
                         <label>Document Type</label>

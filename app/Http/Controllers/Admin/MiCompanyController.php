@@ -9,7 +9,7 @@ class MiCompanyController extends Controller
 {
     public function index()
     {
-        $companies = MiCompany::orderBy('company_id', 'desc')->get();
+        $companies = MiCompany::orderBy('company_id', 'asc')->get();
         return view('companies.index', compact('companies'));
     }
 

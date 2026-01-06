@@ -55,7 +55,7 @@
                             </td>
 
                             <td>
-                                {{ \Carbon\Carbon::parse($order->order_invoice_date)->format('d M Y') }}
+                                {{ \Carbon\Carbon::parse($order->order_invoice_date)->format('d-M-Y') }}
                             </td>
 
                             <td>
