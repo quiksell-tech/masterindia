@@ -7,7 +7,7 @@
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-map-marker-alt mr-1"></i>
-                    Add Company Address
+                    Add Party Address
                 </h3>
             </div>
 
