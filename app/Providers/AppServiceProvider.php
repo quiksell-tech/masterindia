@@ -31,9 +31,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(SystemParametersInterface::class, SystemParameterRepository::class);
 
         $this->app->scoped(EwayBillService::class, function($app){
-            if(app()->runningInConsole()){
-                request()->merge(['eway_service'=>'MasterIndia']);
-            }
+            request()->merge(['eway_service'=>'MasterIndia']);
             if(request('eway_service')){
                 //choose service from request
                 if(class_exists('App\Services\EwayBill\\'.request('eway_service').'Service'))
@@ -50,9 +48,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->scoped(EwayBillDataInterface::class, function($app){
-            if(app()->runningInConsole()){
-                request()->merge(['eway_service'=>'MasterIndia']);
-            }
+            request()->merge(['eway_service'=>'MasterIndia']);
             if(request('eway_service')){
                 //choose service from request
                 if(class_exists('App\Repositories\\'.request('eway_service').'EwayBillTransactionRepository'))
@@ -67,9 +63,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->scoped(EinvoiceService::class, function($app){
-            if(app()->runningInConsole()){
-                request()->merge(['einvoice_service'=>'MasterIndia']);
-            }
+            request()->merge(['einvoice_service'=>'MasterIndia']);
             if(request('einvoice_service')){
                 //die('App\Services\EInvoice\\'.request('einvoice_service'));
                 //choose service from request
@@ -85,9 +79,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->scoped(EinvoiceDataInterface::class, function($app){
-            if(app()->runningInConsole()){
-                request()->merge(['einvoice_service'=>'MasterIndia']);
-            }
+            request()->merge(['einvoice_service'=>'MasterIndia']);
             if(request('einvoice_service')){
                 //choose service from request
                 if(class_exists('App\Repositories\\'.request('einvoice_service').'TransactionRepository')){
