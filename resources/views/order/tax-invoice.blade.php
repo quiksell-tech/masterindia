@@ -20,8 +20,7 @@
 </div>
 
 <hr>
-
-<table class="no-border" width="100%">
+<table width="100%" cellspacing="0" cellpadding="4" style="font-size: 14px;">
     <tr>
         <!-- Company Details -->
         <td width="60%" valign="top">
@@ -36,13 +35,40 @@
             <strong>Email:</strong> {{ config('company.email') }}
         </td>
 
-        <!-- Invoice Meta -->
-        <td width="40%" valign="top" align="right">
-            <strong>Invoice No:</strong> {{ $order->order_invoice_number }}<br>
-            <strong>Date:</strong> {{ \Carbon\Carbon::parse($order->order_invoice_date)->format('d-M-Y') }}
+        <!-- Invoice & Transport Details -->
+        <td width="40%" valign="top">
+            <table width="100%" cellspacing="0" cellpadding="2">
+                <tr>
+                    <td align="right"><strong>Invoice No:</strong></td>
+                    <td align="left">{{ $order->order_invoice_number }}</td>
+                </tr>
+                <tr>
+                    <td align="right"><strong>Date:</strong></td>
+                    <td align="left">
+                        {{ \Carbon\Carbon::parse($order->order_invoice_date)->format('d-M-Y') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right"><strong>Transporter:</strong></td>
+                    <td align="left">{{ $order->transporter_name }}</td>
+                </tr>
+                <tr>
+                    <td align="right"><strong>Vehicle No:</strong></td>
+                    <td align="left">{{ $order->vehicle_no }}</td>
+                </tr>
+                <tr>
+                    <td align="right"><strong>Document No:</strong></td>
+                    <td align="left">{{ $order->transporter_document_no }}</td>
+                </tr>
+                <tr>
+                    <td align="right"><strong>Transport Date:</strong></td>
+                    <td align="left">{{ $order->transportation_date }}</td>
+                </tr>
+            </table>
         </td>
     </tr>
 </table>
+
 
 <br>
 

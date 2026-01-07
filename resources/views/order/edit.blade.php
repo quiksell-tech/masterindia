@@ -440,6 +440,18 @@
                     <i class="fas fa-file-pdf"></i> Invoice PDF
                 </a>
             </div>
+                <div class="mt-3 d-flex justify-content-end">
+                    <a href="#"
+                       class="btn btn-sm btn-danger">
+                        <i class="fas fa-file-pdf"></i> Generate E-WayBill
+                    </a>
+                </div>
+                <div class="mt-3 d-flex justify-content-end">
+                    <a href="#"
+                       class="btn btn-sm btn-danger">
+                        <i class="fas fa-file-pdf"></i> Generate E-invoice
+                    </a>
+                </div>
             @endif
         </div>
     </form>
