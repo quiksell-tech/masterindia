@@ -3,7 +3,7 @@
 
 namespace App\Services;
 
-use App\Repositories\Interfaces\ApiLogInterface;
+use App\Models\ApiLog;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ServerException;
@@ -13,7 +13,7 @@ use GuzzleHttp\RequestOptions;
 class GuzzleService
 {
 
-    public function __construct(Client $client, ApiLogInterface $apiLog){
+    public function __construct(Client $client, ApiLog $apiLog){
         $this->client=$client;
         $this->apiLog = $apiLog;
     }

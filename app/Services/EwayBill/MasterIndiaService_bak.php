@@ -2,12 +2,15 @@
 
 namespace App\Services\EwayBill;
 
-use App\Models\SystemParameter;
+use App\Repositories\Interfaces\SystemParametersInterface;
 use App\Services\GuzzleService;
-use Carbon\Carbon;
+use App\Traits\GetConfig;
 
-class MasterIndiaService
+class MasterIndiaServiceBak implements EwayBillService
 {
+
+    use GetConfig;
+
     protected $cancellation_reasons = [
         'duplicate' => 'Duplicate',
         'order-cancelled' => 'Order Cancelled',
@@ -24,95 +27,56 @@ class MasterIndiaService
     ];
 
     protected $vehicle_update_reason = [
-        'break-down' => 'Due to Break Down',
-        'transshipment' =>'Due to Transhipment',
-        'others' => 'Others',
-        'first-time' => 'First Time'
+      'break-down' => 'Due to Break Down',
+      'transshipment' =>'Due to Transhipment',
+      'others' => 'Others',
+      'first-time' => 'First Time'
     ];
-    protected SystemParameter $systemParameters;
 
-    protected ?string $ACCESS_TOKEN = null;
-    protected ?string $AUTH_TIMESTAMP = null;
-    protected  $guzzleService;
-
-    public function __construct(GuzzleService $guzzleService)
-    {
-        $this->systemParameters = new SystemParameter();
+    public function __construct(GuzzleService $guzzleService, SystemParametersInterface  $systemParameters){
         $this->guzzleService = $guzzleService;
-        // Load system parameters
+        $this->systemParameters = $systemParameters;
         $this->getSystemParams(['MasterIndia']);
 
-        // Check token expiry
-        if (
-            empty($this->AUTH_TIMESTAMP) ||
-            Carbon::now()->gte(Carbon::parse($this->AUTH_TIMESTAMP))
-        ) {
-            if (!app()->runningInConsole()) {
-
+        if(empty($this->AUTH_TIMESTAMP) || date('Y-m-d H:i:s') >= $this->AUTH_TIMESTAMP){
+            if(!app()->runningInConsole()){
                 $token = $this->authenticate();
-
-                if ($token) {
-                    // Save new access token
-                    $this->systemParameters->updateRecord(
+                if($token){
+                    $this->systemParameters->updateRecord([
+                        'sysprm_provider'=>'MasterIndia',
+                        'sysprm_name'=>'ACCESS_TOKEN'
+                    ],
                         [
-                            'sysprm_provider' => 'MasterIndia',
-                            'sysprm_name'     => 'ACCESS_TOKEN',
-                        ],
+                            'sysprm_value'=>$token,
+                        ]);
+                    $this->systemParameters->updateRecord([
+                        'sysprm_provider'=>'MasterIndia',
+                        'sysprm_name'=>'AUTH_TIMESTAMP'
+                    ],
                         [
-                            'sysprm_value' => $token,
-                        ]
-                    );
-
-                    // Save new expiry timestamp (50 mins)
-                    $this->systemParameters->updateRecord(
-                        [
-                            'sysprm_provider' => 'MasterIndia',
-                            'sysprm_name'     => 'AUTH_TIMESTAMP',
-                        ],
-                        [
-                            'sysprm_value' => Carbon::now()->addMinutes(50)->format('Y-m-d H:i:s'),
-                        ]
-                    );
+                            'sysprm_value'=>date('Y-m-d H:i:s', strtotime('+50 minutes')),
+                        ]);
                 }
-
-            } else {
-                // Ignore token when running artisan
-                $token = '<artisan command>';
+            }else{
+                $token = '<artisan command>';// ignore when running artisan command
             }
-
-        } else {
-            // Token still valid
+        }else{
             $token = $this->ACCESS_TOKEN;
         }
 
-        if (empty($token)) {
-            abort(response()->json([
-                'success' => false,
-                'message' => 'Access Token Cannot Be Generated'
-            ], 400));
+        if(empty($token))
+        {
+            http_response_code(400);
+            echo json_encode([
+                'success'=>false,
+                'message'=>'Access Token Cannot Be Generated'
+            ]);
+            die;
         }
 
         $this->ACCESS_TOKEN = $token;
     }
 
-    /**
-     * Load system parameters into class properties
-     */
-    protected function getSystemParams(array $providers)
-    {
-        $params = SystemParameter::whereIn('sysprm_provider', $providers)
-            ->where('current_flag', 'Y')
-            ->get();
-
-        foreach ($params as $param) {
-            $this->{$param->sysprm_name} = $param->sysprm_value;
-        }
-    }
-
-    /**
-     * Authenticate with MasterIndia API
-     * MUST return access token string
-     */
     public function refreshToken(){
 
         $token =  $this->authenticate();
@@ -166,10 +130,117 @@ class MasterIndiaService
         return null;
 
     }
-    public function generateEwayBill($parameters)
-    {
+
+    public function generateEwayBill($data){
+        $original_data = $data;
         $endpoint = $this->BASE_URL.'/ewayBillsGenerate';
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $parameters, [], 'MasterIndia', 'gen_e_bill', $parameters['document_number'] );
+
+        if($data['igst_flag'] == 'Y'){
+            $igst_total = $data['sell_invoice_gst_value'];
+            $sgst_total=0;
+            $cgst_total=0;
+        }else{
+            $igst_total = 0;
+            $sgst_total=$data['sell_invoice_gst_value']/2;
+            $cgst_total=$data['sell_invoice_gst_value']/2;
+        }
+
+        $items_list =[];
+        $total_assessable_value =0;
+        $total_other_charges =0;
+        foreach($data['items_list'] as $item) {
+
+            if($data['igst_flag'] == 'Y'){
+                $igst_rate = $item['gst_rate'];
+                $sgst_rate = 0;
+                $cgst_rate = 0;
+            }else{
+                $igst_rate = 0;
+                $sgst_rate = $item['gst_rate']/2;
+                $cgst_rate = $item['gst_rate']/2;
+            }
+
+            $total_assessable_value += round($item['assessable_value'], 2);
+            $total_other_charges += round($item['other_charge'],2);
+
+            $items_list[] = [
+                "product_name" => $item['product_name'],
+                "product_description" => $item['product_description'],
+                "hsn_code" => $item['product_hsn'],
+                "unit_of_product" => "PCS",  // to be discussed
+                "cgst_rate" => round($cgst_rate, 2),
+                "sgst_rate" => round($sgst_rate,2),
+                "igst_rate" => round($igst_rate, 2),
+                "cess_rate" => 0,
+                "quantity" => $item['product_quantity'],
+                "cessNonAdvol" => 0,
+                "taxable_amount" => round($item['assessable_value'], 2)
+            ];
+        }
+
+        $params = [
+                "access_token" => $this->ACCESS_TOKEN,
+                "userGstin" => $data['company_gstin'],
+                "supply_type" => "Outward",
+                "sub_supply_type" => "Supply",
+                //"sub_supply_description" => "sales from other country", // to be discussed
+                "document_type" => "Tax Invoice",
+                "document_number" => strtoupper($data['ext_invoice_ref_no']),
+                "document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
+                "gstin_of_consignor" => $data['company_gstin'],
+                "legal_name_of_consignor" => $data['company_name'],
+                "address1_of_consignor" => $data['company_address_1'],
+                "address2_of_consignor" => $data['company_address_2'],
+                "place_of_consignor" => strtoupper($data['company_city']),
+                "pincode_of_consignor" => $data['company_pincode'],
+                "state_of_consignor" => strtoupper($data['company_state']),
+                "actual_from_state_name" => strtoupper($data['company_state']),  //to be discussed
+                "gstin_of_consignee" => ($data['buyer_gstin'] == null || strlen($data['buyer_gstin']) < 15 )?'URP':$data['buyer_gstin'], //check for length less than 15 or null send URP
+                "legal_name_of_consignee" => $data['party_name']??$data['party_legal_name'],//check for null value.if doesnt work with null pass party_name
+                "address1_of_consignee" => $data['ship_to_address_line_1'],
+                "address2_of_consignee" => $data['ship_to_address_line_2']??'',
+                "place_of_consignee" => strtoupper($data['ship_to_city']),
+                "pincode_of_consignee" => $data['ship_to_pincode'],
+                "state_of_supply" => strtoupper($data['ship_to_state']),
+                "actual_to_state_name" => strtoupper($data['ship_to_state']), //to be discussed
+                "transaction_type" => 1,
+                "other_value" => round($total_other_charges,2),
+                "total_invoice_value" =>  round($data['sell_invoice_total_value'],2),
+                "taxable_amount" =>  round($total_assessable_value,2),
+                "cgst_amount" =>  $cgst_total,
+                "sgst_amount" => $sgst_total,
+                "igst_amount" =>  $igst_total,
+                "cess_amount" => 0,
+                "cess_nonadvol_value" => 0,
+                //"transporter_id" => "05AAABB0639G1Z8", //if tracking partner is self pickup --> dont send this param. only use vehiclenum,type & transport_mode=road //else send only transporter id without model,vehicle_num,vehicle_type
+                // table will be provided to fetch transporter_id
+
+                //"transporter_name" => "", //to be discussed
+                // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
+                // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
+                //"transportation_mode" => "road", //to be discussed
+                //"transportation_distance" => "656", //to be discussed
+                //"vehicle_number" => $data['vehicle_number']??'', //to be discussed
+                //"vehicle_type" => "Regular", //to be discussed
+                //"generate_status" => 1, //to be discussed
+                "data_source" => "erp", //to be discussed
+                //"user_ref" => "1232435466sdsf234", //to be discussed
+                //"location_code" => "XYZ", //to be discussed
+                //"eway_bill_status" => "ABC", //to be discussed
+                //"auto_print" => "Y", //to be discussed
+                //"email" => "mayanksharma@mastersindia.co", //to be discussed
+                "itemList" => $items_list
+        ];
+
+        if($data['tracking_partner_name']=='Self Pickup' && !empty($data['transporter_vehicle_number'])){
+          $params['transportation_mode'] = 'road';
+          $params['vehicle_number'] = $data['transporter_vehicle_number']??'';
+          $params['vehicle_type'] = 'Regular';
+        }else{
+          $params['transporter_id'] =$data['transporter_id'];
+        }
+
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_e_bill', $data['sell_invoice_ref_no'] );
         if($result['error']===false){
             $response = json_decode($result['data'], true);
             if(isset($response['results']['status']) && strtolower($response['results']['status']) == 'success'){
@@ -180,11 +251,13 @@ class MasterIndiaService
 
         if(isset($result['header_status']) && $result['header_status'] == 401){
             $this->refreshToken();
-            return $this->generateEwayBill($parameters);
+            return $this->generateEwayBill($original_data);
         }
 
         return json_response(400, ($response['results']['message']??$result['message']).' '.($response['results']['code']??''));
+
     }
+
 
     public function cancelEwayBill($data){
         $original_data = $data;
@@ -217,7 +290,19 @@ class MasterIndiaService
 
     }
 
-    public function updateVehicleNumber($data){
+    public function updateEwayBill($data){
+        if($data['action'] == 'update-vehicle'){
+            return $this->updateVehicleNumber($data);
+        }else if($data['action'] == 'update-transporter'){
+            return $this->updateTransporterID($data);
+        }else if($data['action'] == 'extend-validity'){
+            return $this->extendBillValidity($data);
+        }else{
+            return json_response(400, 'Invalid Update Action');
+        }
+    }
+
+    private function updateVehicleNumber($data){
         $original_data = $data;
         $endpoint = $this->BASE_URL.'/updateVehicleNumber';
 
@@ -256,7 +341,7 @@ class MasterIndiaService
     }
 
 
-    public function updateTransporterID($data){
+    private function updateTransporterID($data){
         $original_data = $data;
         $endpoint = $this->BASE_URL.'/transporterIdUpdate';
 
@@ -294,30 +379,30 @@ class MasterIndiaService
         $endpoint = $this->BASE_URL.'/ewayBillValidityExtend';
 
         $params = [
-            'access_token' => $this->ACCESS_TOKEN,
-            "userGstin" => $data['company_gstin'],
-            "eway_bill_number" => $data['eway_bill_no'],
-            "place_of_consignor" => strtoupper($data['company_city']),
-            "pincode_of_consignor" => $data['company_pincode'],
-            "state_of_consignor" => strtoupper($data['company_state']),
-            "remaining_distance" => 250, // to be discused it is required
-            // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
-            // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
-            "extend_validity_reason" => $this->extension_reasons[$data['extension_reason']]??'Others',
-            "extend_remarks" => $data['extension_remarks'],
-            "from_pincode" => $data['company_pincode'],
-            "consignment_status" => "M", // not required for in movement status
-            // "transit_type" => "Road", //Roan,Warehouse not required for consignment status M
-            // "address_line1" => "Dehradun", // not required for consignment status M
-            // "address_line2" => "Dehradun", // not required for consignment status M
-            // "address_line3" => "Dehradun" // not required for consignment status M
-        ];
+                'access_token' => $this->ACCESS_TOKEN,
+                "userGstin" => $data['company_gstin'],
+                "eway_bill_number" => $data['eway_bill_no'],
+                "place_of_consignor" => strtoupper($data['company_city']),
+                "pincode_of_consignor" => $data['company_pincode'],
+                "state_of_consignor" => strtoupper($data['company_state']),
+                "remaining_distance" => 250, // to be discused it is required
+                // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
+                // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
+                "extend_validity_reason" => $this->extension_reasons[$data['extension_reason']]??'Others',
+                "extend_remarks" => $data['extension_remarks'],
+                "from_pincode" => $data['company_pincode'],
+                "consignment_status" => "M", // not required for in movement status
+                // "transit_type" => "Road", //Roan,Warehouse not required for consignment status M
+                // "address_line1" => "Dehradun", // not required for consignment status M
+                // "address_line2" => "Dehradun", // not required for consignment status M
+                // "address_line3" => "Dehradun" // not required for consignment status M
+            ];
 
         if($data['tracking_partner_name']=='Self Pickup'){
-            $params["vehicle_number"] = $data['transporter_vehicle_number']; //to be discussed
-            $params["mode_of_transport"] = "road";
+          $params["vehicle_number"] = $data['transporter_vehicle_number']; //to be discussed
+          $params["mode_of_transport"] = "road";
         }else{
-            //vehicle number is required to be discused
+          //vehicle number is required to be discused
         }
 
 
@@ -404,5 +489,33 @@ class MasterIndiaService
     }
 
 
+    public function getApiCounts($data){
+      $original_data = $data;
+      $endpoint = $this->BASE_URL.'/Userapis/apicount';
+
+      $params = [
+          'access_token' => $this->ACCESS_TOKEN,
+          "account_email" => $data['account_email'],
+          "from_date" => $data['from_date'],
+          "to_date" => $data['to_date']
+      ];
+
+      $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'inv_api_count' );
+
+      if($result['error']===false){
+          $response = json_decode($result['data'], true);
+          if(isset($response['results']['status']) && strtolower($response['results']['status']) == 'success'){
+              return $response;
+          }
+      }
+
+      if(isset($result['header_status']) && $result['header_status'] == 401){
+          $this->refreshToken();
+          return $this->apiCount($original_data);
+      }
+
+      return json_response(400, ($response['results']['message']??$result['message']).' '.($response['results']['code']??''));
+
+    }
 
 }

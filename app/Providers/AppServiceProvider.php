@@ -37,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
                 if(class_exists('App\Services\EwayBill\\'.request('eway_service').'Service'))
                     return $app->make('App\Services\EwayBill\\'.request('eway_service').'Service');
             }else{
-                return $app->make('App\Services\EwayBill\MasterIndiaService');
+                return $app->make('App\Services\EwayBill\MasterIndiaServiceBak');
             }
             http_response_code(400);
             echo json_encode([
