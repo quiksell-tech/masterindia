@@ -174,6 +174,11 @@ class OrderController extends Controller
         }
         $defaultDate = $today > $latestDate ? $latestDate : $today;
 
+        if($defaultDate>$orderInvoiceDate)
+        {
+            $defaultDate=$orderInvoiceDate;
+        }
+
         return view('order.edit', compact('order', 'order','items','allItems','transporters','latestDate','today','latestDate','lastDateOfMonth','defaultDate','orderInvoiceDate'));
     }
     public function invoiceData(MiOrder $order)
