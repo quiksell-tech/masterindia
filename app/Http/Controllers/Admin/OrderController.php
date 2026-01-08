@@ -105,9 +105,20 @@ class OrderController extends Controller
         $order['vehicle_no'] =$request->vehicle_no;
         //$order['transporter_id'] =$request->transporter_id;
         $order['transporter_name'] =$request->transporter_name;
-        $order['order_invoice_date'] =$request->order_invoice_date;
+
+
+        $order_invoice_date = Carbon::createFromFormat('d-M-Y', $request->order_invoice_date)
+            ->format('Y-m-d');
+
+        $order['order_invoice_date'] =$order_invoice_date;
         $order['transporter_document_no'] =$request->transporter_document_no;
-        $order['transportation_date'] =$request->transportation_date;
+        if(!empty($request->transportation_date))
+        {
+            $transportation_date = Carbon::createFromFormat('d-M-Y', $request->transportation_date)
+                ->format('Y-m-d');
+            $order['transportation_date'] =$transportation_date;
+        }
+
         $order['is_active'] ='Y';
 
 
@@ -148,8 +159,22 @@ class OrderController extends Controller
         ])
             ->where('order_id', $order->order_id)
             ->firstOrFail();
+        // Get latest order_invoice_date
+        $latestDate = MiOrder::max('order_invoice_date');
+        $orderInvoiceDate = Carbon::parse($order->order_invoice_date)->format('Y-m-d');
+        $today = now()->format('Y-m-d');
+        $lastDateOfMonth = now()->endOfMonth()->format('Y-m-d');
 
-        return view('order.edit', compact('order', 'order','items','allItems','transporters'));
+        if ($latestDate) {
+            // ✅ Use latest invoice date as-is
+            $latestDate = Carbon::parse($latestDate)->format('Y-m-d');
+        } else {
+            // ✅ First order case
+            $latestDate = Carbon::today()->format('Y-m-d');
+        }
+        $defaultDate = $today > $latestDate ? $latestDate : $today;
+
+        return view('order.edit', compact('order', 'order','items','allItems','transporters','latestDate','today','latestDate','lastDateOfMonth','defaultDate','orderInvoiceDate'));
     }
     public function invoiceData(MiOrder $order)
     {
@@ -270,7 +295,11 @@ class OrderController extends Controller
         $data['bill_to_party_id']     = $validated['bill_to_party_id'];
         $data['bill_to_address_id']   = $validated['bill_to_address_id'];
         $data['supply_type']          = $validated['supply_type'];
-        $data['order_invoice_date']   = $validated['order_invoice_date'];
+
+        $order_invoice_date = Carbon::createFromFormat('d-M-Y', $validated['order_invoice_date'])
+            ->format('Y-m-d');
+
+        $order['order_invoice_date'] =$order_invoice_date;
 
         $data['sub_supply_type'] =$request->sub_supply_type;
         $data['document_type'] =$request->document_type;
@@ -280,7 +309,12 @@ class OrderController extends Controller
 
         $data['transporter_name'] =$request->transporter_name;
         $order['transporter_document_no'] =$request->transporter_document_no;
-        $order['transportation_date'] =$request->transportation_date;
+        if(!empty($request->transportation_date))
+        {
+            $transportation_date = Carbon::createFromFormat('d-M-Y', $request->transportation_date)
+                ->format('Y-m-d');
+            $order['transportation_date'] =$transportation_date;
+        }
         $data['is_active'] ='Y';
 
         if ($validated['supply_type'] === 'inward') {
