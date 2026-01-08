@@ -46,15 +46,15 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Document Date</label>
-                            <input type="date"
+                            <input type="text"
                                    name="order_invoice_date"
                                    id="order_invoice_date"
                                    class="form-control mb-3"
-                                   value="{{ old('order_invoice_date', $defaultDate) }}"
-                                   min="{{ $latestDate }}"
-                                   max="{{ $lastDateOfMonth }}">
+                                   value="{{ old('order_invoice_date', \Carbon\Carbon::parse($defaultDate)->format('d-M-Y')) }}"
+                                   placeholder="DD-MMM-YYYY">
                         </div>
                     </div>
+
 
 
                     <div class="col-md-3">
@@ -118,11 +118,12 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label>Transportation Date</label>
-                            <input type="date"
+                            <label>Transportation Doc Date</label>
+                            <input type="text"
                                    name="transportation_date"
                                    id="transportation_date"
-                                   class="form-control mb-3">
+                                   class="form-control mb-3"
+                                   placeholder="DD-MMM-YYYY">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -517,7 +518,26 @@
         });
     </script>
 
+    <script>
+        flatpickr("#order_invoice_date", {
+            dateFormat: "d-M-Y",
+            allowInput: true,
+
+            minDate: new Date(
+                {{ \Carbon\Carbon::parse($latestDate)->year }},
+                {{ \Carbon\Carbon::parse($latestDate)->month - 1 }},
+                {{ \Carbon\Carbon::parse($latestDate)->day }}
+            ),
+
+            defaultDate: "{{ \Carbon\Carbon::parse($defaultDate)->format('d-M-Y') }}"
+        });
 
 
-
+    </script>
+    <script>
+        flatpickr("#transportation_date", {
+            dateFormat: "d-M-Y",   // 10-Jan-2025
+            allowInput: true
+        });
+    </script>
 @endsection

@@ -24,6 +24,7 @@
                     <tr>
                         <th style="width: 80px">ID</th>
                         <th>Invoice No.</th>
+                        <th>Qty.</th>
                         <th>Total Sale</th>
                         <th>Total Tax</th>
                         <th>Total After Tax</th>
@@ -41,6 +42,10 @@
 
                             <td>
                                 <strong>{{ $order->order_invoice_number }}</strong>
+                            </td>
+
+                            <td>
+                                <strong>{{ count($order->items) }}</strong>
                             </td>
 
                             <td>

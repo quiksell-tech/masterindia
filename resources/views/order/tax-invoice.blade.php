@@ -20,15 +20,18 @@
 </div>
 
 <hr>
-<table width="100%" cellspacing="0" cellpadding="4" style="font-size: 14px;">
+<table width="100%" cellspacing="0" cellpadding="6" style="font-size:14px;">
     <tr>
         <!-- Company Details -->
-        <td width="60%" valign="top">
-            <strong>{{ config('company.name') }}</strong><br>
+        <td width="50%" valign="top">
+            <strong style="font-size:16px;">
+                {{ config('company.name') }}
+            </strong><br>
 
             {{ config('company.address.line') }}<br>
             {{ config('company.address.city') }},
-            {{ config('company.address.state') }} - {{ config('company.address.pincode') }}<br><br>
+            {{ config('company.address.state') }}
+            - {{ config('company.address.pincode') }}<br><br>
 
             <strong>GSTIN:</strong> {{ config('company.gstin') }}<br>
             <strong>Phone:</strong> {{ config('company.phone') }}<br>
@@ -36,38 +39,66 @@
         </td>
 
         <!-- Invoice & Transport Details -->
-        <td width="40%" valign="top">
-            <table width="100%" cellspacing="0" cellpadding="2">
+        <td width="50%" valign="top">
+            <table width="100%" cellspacing="0" cellpadding="4">
                 <tr>
-                    <td align="right"><strong>Invoice No:</strong></td>
-                    <td align="left">{{ $order->order_invoice_number }}</td>
+                    <td width="45%" align="right">
+                        <strong>Invoice No:</strong>
+                    </td>
+                    <td width="55%" align="left">
+                        {{ $order->order_invoice_number }}
+                    </td>
                 </tr>
+
                 <tr>
-                    <td align="right"><strong>Date:</strong></td>
+                    <td align="right">
+                        <strong>Date:</strong>
+                    </td>
                     <td align="left">
                         {{ \Carbon\Carbon::parse($order->order_invoice_date)->format('d-M-Y') }}
                     </td>
                 </tr>
+
                 <tr>
-                    <td align="right"><strong>Transporter:</strong></td>
-                    <td align="left">{{ $order->transporter_name }}</td>
+                    <td align="right">
+                        <strong>Transporter:</strong>
+                    </td>
+                    <td align="left">
+                        {{ $order->transporter_name }}
+                    </td>
                 </tr>
+
                 <tr>
-                    <td align="right"><strong>Vehicle No:</strong></td>
-                    <td align="left">{{ $order->vehicle_no }}</td>
+                    <td align="right">
+                        <strong>Vehicle No:</strong>
+                    </td>
+                    <td align="left">
+                        {{ $order->vehicle_no }}
+                    </td>
                 </tr>
+
                 <tr>
-                    <td align="right"><strong>Document No:</strong></td>
-                    <td align="left">{{ $order->transporter_document_no }}</td>
+                    <td align="right">
+                        <strong>Transport Doc No:</strong>
+                    </td>
+                    <td align="left">
+                        {{ $order->transporter_document_no }}
+                    </td>
                 </tr>
+
                 <tr>
-                    <td align="right"><strong>Transport Date:</strong></td>
-                    <td align="left">{{ $order->transportation_date }}</td>
+                    <td align="right">
+                        <strong>Transport Date:</strong>
+                    </td>
+                    <td align="left">
+                        {{ \Carbon\Carbon::parse($order->transportation_date)->format('d-M-Y') }}
+                    </td>
                 </tr>
             </table>
         </td>
     </tr>
 </table>
+
 
 
 <br>
@@ -80,8 +111,8 @@
     <tr>
         <td>
             <strong>Name:</strong> {{ $order->billToParty->party_trade_name }}<br>
-            <strong>Mobile:</strong> {{ $order->billToParty->phone }}<br>
-            <strong>Email:</strong> {{ $order->billToParty->email }}<br>
+{{--            <strong>Mobile:</strong> {{ $order->billToParty->phone }}<br>--}}
+{{--            <strong>Email:</strong> {{ $order->billToParty->email }}<br>--}}
             <strong>GST:</strong> {{ $order->billToParty->party_gstn }}<br>
             <strong>Address:</strong>
 
@@ -95,8 +126,8 @@
             @if(!empty($order->shipToParty->ship_to_party_id))
 
                 <strong>Name:</strong> {{ $order->shipToParty->party_trade_name }}<br>
-                <strong>Mobile:</strong> {{ $order->shipToParty->phone }}<br>
-                <strong>Email:</strong> {{ $order->shipToParty->email }}<br>
+{{--                <strong>Mobile:</strong> {{ $order->shipToParty->phone }}<br>--}}
+{{--                <strong>Email:</strong> {{ $order->shipToParty->email }}<br>--}}
                 <strong>GST:</strong> {{ $order->shipToParty->party_gstn }}<br>
                 <strong>Address:</strong>
 
@@ -107,8 +138,8 @@
                 <strong>Place of Supply:</strong> {{ $order->shipToAddress->state_code }}
             @else
                 <strong>Name:</strong> {{ $order->billToParty->party_trade_name }}<br>
-                <strong>Mobile:</strong> {{ $order->billToParty->phone }}<br>
-                <strong>Email:</strong> {{ $order->billToParty->email }}<br>
+{{--                <strong>Mobile:</strong> {{ $order->billToParty->phone }}<br>--}}
+{{--                <strong>Email:</strong> {{ $order->billToParty->email }}<br>--}}
                 <strong>GST:</strong> {{ $order->billToParty->party_gstn }}<br>
                 <strong>Address:</strong>
 
@@ -125,8 +156,8 @@
         <td><span class="text-center" ><strong>Dispatch From:</strong></span><br>
         @if(!empty($order->dispatchFromParty->dispatch_from_party_id))
                 <strong>Name:</strong> {{ $order->dispatchFromParty->party_trade_name }}<br>
-                <strong>Mobile:</strong> {{ $order->dispatchFromParty->phone }}<br>
-                <strong>Email:</strong> {{ $order->dispatchFromParty->email }}<br>
+{{--                <strong>Mobile:</strong> {{ $order->dispatchFromParty->phone }}<br>--}}
+{{--                <strong>Email:</strong> {{ $order->dispatchFromParty->email }}<br>--}}
                 <strong>GST:</strong> {{ $order->dispatchFromParty->party_gstn }}<br>
                 <strong>Address:</strong>
 
@@ -208,13 +239,25 @@
     </tr>
     </thead>
     <tbody>
+    @if($order->billFromAddress->state_code==$order->billToAddress->state_code)
+
         <tr>
-        <td>-</td>
-        <td>0</td>
-        <td>0</td>
-        <td>{{ number_format($order->total_tax, 2) }}</td>
-        <td>{{ number_format($order->total_tax, 2) }}</td>
+            <td>-</td>
+            <td>0</td>
+            <td>{{ number_format($order->total_tax/2, 2) }}</td>
+            <td>{{ number_format($order->total_tax/2, 2) }}</td>
+            <td>{{ number_format($order->total_tax, 2) }}</td>
         </tr>
+    @else
+        <tr>
+            <td>-</td>
+            <td>0</td>
+            <td>0</td>
+            <td>{{ number_format($order->total_tax, 2) }}</td>
+            <td>{{ number_format($order->total_tax, 2) }}</td>
+        </tr>
+    @endif
+
     </tbody>
 </table>
 
