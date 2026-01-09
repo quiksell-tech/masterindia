@@ -34,5 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'msg91' => [
+        'auth_key' =>'226853AH9puGQsBX5be720f9',
+        'template_id' => '61b5da5a93e38f716104def7',
+    ],
 ];

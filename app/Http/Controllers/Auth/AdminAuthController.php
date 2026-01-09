@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Auth\MiAdminUser;
+use App\Services\Msg91Service;
+use Illuminate\Http\Request;
 
 class AdminAuthController extends Controller
 {
@@ -23,7 +24,7 @@ class AdminAuthController extends Controller
     /**
      * Send OTP (AJAX)
      */
-    public function sendOtp(Request $request)
+    public function sendOtp(Request $request,Msg91Service $msg91)
     {
 
         $request->validate([
@@ -41,7 +42,17 @@ class AdminAuthController extends Controller
         }
 
         // Generate OTP
-        $otp = 111111; // For testing; use random_int(100000, 999999) in production
+        $otp = 224444; // For testing; use random_int(100000, 999999) in production
+        $mobile = '91' . $user->phone;
+        $result = $msg91->sendOtp($mobile, $otp);
+
+        if (!$result['success']) {
+            return response()->json([
+                'status' => false,
+                'message' => 'OTP failed',
+                'error' => $result['message']
+            ], 500);
+        }
 
         // Update OTP and expiry
         $user->update([

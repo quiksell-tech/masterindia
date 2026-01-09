@@ -228,6 +228,7 @@ class EwayBillController extends Controller
 
                 $ewayBillData['state_of_consignor'] = strtoupper($order->dispatchFromAddress->state);
                 $ewayBillData['actual_from_state_name'] = strtoupper($order->dispatchFromAddress->state);
+
             } else {
                 $ewayBillData['address1_of_consignor'] = $order->billFromAddress->address_line;
                 $ewayBillData['address2_of_consignor'] = $order->billFromAddress->address_line;
@@ -237,7 +238,7 @@ class EwayBillController extends Controller
                 $ewayBillData['actual_from_state_name'] = strtoupper($order->billFromAddress->state);
             }
             // address of consignee i.e. purchaser/Buyer
-            if ($order->billFromParty) {
+            if ($order->billToParty) {
                 $ewayBillData['gstin_of_consignee'] = $order->billToParty->party_gstn;
                 $ewayBillData['legal_name_of_consignee'] = $order->billToParty->party_legal_name;
             }
@@ -262,11 +263,13 @@ class EwayBillController extends Controller
             }
 
             if ($order->shipToAddress->address_id && $order->dispatchFromAddress->address_line) {
+
                 $ewayBillData['transaction_type'] = 1;
             }
 
-
+            // check  no documet case
             if ($order->transporter_name == 'SELF') {
+
                 $ewayBillData['transportation_mode'] = $order->transportation_mode;
                 $ewayBillData['vehicle_number'] = $order->vehicle_no;
                 $ewayBillData['vehicle_type'] = $order->vehicle_type;
@@ -275,7 +278,9 @@ class EwayBillController extends Controller
                 $ewayBillData['transporter_id'] = $order->transporter_id;// GSTN of transporter
 
             }
+
             $data=['order_invoice_number'=>$order->order_invoice_number];
+
             $response = $this->masterIndiaService->generateEwayBill($data,$ewayBillData);
             if ($response instanceof Response) {
                 // update psos for error
@@ -304,6 +309,7 @@ class EwayBillController extends Controller
                     'alert_message' => $response['message']['alert'],
                     'request_id' => $response['requestId'],
                 ]);
+
             if (!$isRecordCreated)
                 return response()->json(['status' => false, 'message' => 'Ewaybill created but failed to save response', 'data' => []]);
 
@@ -387,7 +393,7 @@ class EwayBillController extends Controller
 
         $params = [
 
-            "userGstin" => $order->billFromParty->party_gstn,
+            "userGstin" => $this->company_gstn,
             "eway_bill_number" => $order->eway_bill_no,
             "reason_of_cancel" => $this->cancellation_reasons[$request->cancel_reason] ?? 'Others',
             "cancel_remark" => $request->cancel_remarks ?? '',
@@ -500,9 +506,9 @@ class EwayBillController extends Controller
 
                 "userGstin" => $this->company_gstn,
                 "eway_bill_number" => $order->eway_bill_no,
-                "vehicle_number" => $order->vehicle_no,
+                "vehicle_number" => $order->vehicle_no, // change logic
                 "vehicle_type" => $order->vehicle_type,
-                "place_of_consignor" => strtoupper($order->billFromParty->city),
+                "place_of_consignor" => strtoupper($order->billFromParty->city), // change logic
                 "state_of_consignor" => strtoupper($order->billFromParty->state),
                 "reason_code_for_vehicle_updation" => $this->vehicle_update_reason[$request->vehicle_update_reason] ?? 'Others',
                 "reason_for_vehicle_updation" => $request->vehicle_update_remarks,
@@ -514,6 +520,7 @@ class EwayBillController extends Controller
             $data=['order_invoice_number' => $order->order_invoice_number];
 
             $response = $this->masterIndiaService->updateVehicleNumber($data,$params);
+
             $this->masterIndiaEwayBillTransaction->update(
 
                 ['order_id' => $order->order_id],
