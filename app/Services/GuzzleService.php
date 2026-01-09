@@ -12,7 +12,8 @@ use GuzzleHttp\RequestOptions;
 
 class GuzzleService
 {
-
+    protected $apiLog;
+    protected $client;
     public function __construct(Client $client, ApiLog $apiLog){
         $this->client=$client;
         $this->apiLog = $apiLog;
