@@ -5,16 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class MasterIndiaTransaction extends BaseModel
+class MasterIndiaEInvoiceTransaction extends BaseModel
 {
     use HasFactory;
 
-    protected $table = 'masterindia_transaction';
+    protected $table = 'masterindia_einvoice_transaction';
 
     protected $primaryKey = 'masterindia_transaction_id';
 
     protected $fillable = [
-      'sell_invoice_ref_no',
+      'order_id',
       'ack_no',
       'ack_date',
       'irn_no',

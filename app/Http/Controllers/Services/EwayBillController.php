@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers\Services;
 
-use App\Models\Admin\MiItem;
 use App\Models\Admin\MiOrderItem;
-use App\Models\Admin\MiTransporter;
-use App\Repositories\Interfaces\EwayBillDataInterface;
+use App\Models\MasterIndiaEwayBillTransaction;
 use App\Services\EwayBill\MasterIndiaService;
 use App\Models\Admin\MiOrder;
 use Illuminate\Http\Request;
@@ -16,11 +14,14 @@ use App\Http\Controllers\Controller;
 class EwayBillController extends Controller
 {
     protected $masterIndiaService;
-    protected $company_gstn='06AAICR4029F1ZI';
-    public function __construct(MasterIndiaService $masterIndiaService,EwayBillDataInterface $ewayBillData){
+    protected $masterIndiaEwayBillTransaction;
+    protected $company_gstn = '06AAICR4029F1ZI';
 
-        $this->masterIndiaService=$masterIndiaService;
-        $this->ewayBillData = $ewayBillData;
+    public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEwayBillTransaction $masterIndiaEwayBillTransaction)
+    {
+
+        $this->masterIndiaService = $masterIndiaService;
+        $this->masterIndiaEwayBillTransaction = $masterIndiaEwayBillTransaction;
     }
 
 
@@ -68,7 +69,8 @@ class EwayBillController extends Controller
      * "message": "{error message}",
      *  }
      */
-    public function generateEwayBill(MiOrder $order){
+    public function generateEwayBill(MiOrder $order)
+    {
 
 
         $items = MiOrderItem::where('order_id', $order->order_id)->get();
@@ -84,75 +86,74 @@ class EwayBillController extends Controller
         ])
             ->where('order_id', $order->order_id)
             ->first();
-        if(empty($items)){
-            return response()->json(['status'=>false,'message'=>'Order Items Are not added','data'=>[]]);
+        if (empty($items)) {
+            return response()->json(['status' => false, 'message' => 'Order Items Are not added', 'data' => []]);
         }
 
-        if($order){
+        if ($order) {
 
             // validate GSTN
-            if(!empty($order->billToParty->party_gstn)){
-                if($order->supply_type=='outward')
-                {
+            if (!empty($order->billToParty->party_gstn)) {
+                if ($order->supply_type == 'outward') {
                     $valid = $this->masterIndiaService->getGSTINDetails([
-                        'buyer_gstin' =>$order->billToParty->party_gstn,
+                        'buyer_gstin' => $order->billToParty->party_gstn,
                         'sell_invoice_ref_no' => $order->order_invoice_number,
-                        'company_gstin'=> $this->company_gstn,
+                        'company_gstin' => $this->company_gstn,
                     ]);
 
-                }else{
+                } else {
 
                     $valid = $this->masterIndiaService->getGSTINDetails([
-                        'buyer_gstin' =>$order->billFromParty->party_gstn,
+                        'buyer_gstin' => $order->billFromParty->party_gstn,
                         'sell_invoice_ref_no' => $this->company_gstn,
-                        'company_gstin'=> $this->company_gstn,
+                        'company_gstin' => $this->company_gstn,
                     ]);
                 }
 
 
-                if($valid instanceof Response){
+                if ($valid instanceof Response) {
                     // update psos for error
 
-                    $order->update( [
+                    $order->update([
                         'eway_status' => 'E',
-                        'eway_status_message' => json_decode($valid->getContent(), true)['message']??''
+                        'eway_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
                     ]);
-                    return response()->json(['status'=>false,'message'=>$valid->getContent(), true['message']??'','data'=>[]]);
+                    return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
                 }
 
-                if($valid['gstin_status']!='active'){
+                if ($valid['gstin_status'] != 'active') {
 
                     // set error to skip this record for batch process
 
                     $order->update([
                         'eway_status' => 'E',
-                        'eway_status_message' => 'GSTIN not active: '.($valid['gstin_status'] ?? 'unknown')
+                        'eway_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
                     ]);
-                    return response()->json( ['status'=>false,'message'=>'GSTIN not active: '.($valid['gstin_status'] ?? 'unknown'),'data'=>[] ] );
+                    return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
 
                 }
 
             }
 
-            foreach($items as $item){
+            foreach ($items as $item) {
                 // In same state
-                if($order->billFromAddress->state_code == $order->billToParty->state_code){
+                if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
 
                     $igst_rate = 0;
-                    $sgst_rate = $item->tax_percentage/2;
-                    $cgst_rate = $item->tax_percentage/2;
-                }else{
+                    $sgst_rate = $item->tax_percentage / 2;
+                    $cgst_rate = $item->tax_percentage / 2;
+                } else {
                     $igst_rate = $item->tax_percentage;
                     $sgst_rate = 0;
                     $cgst_rate = 0;
                 }
                 $items_list[] = [
                     "product_name" => $item->item_name,
-                    "product_description" =>$item->item_description,
+                    "product_description" => $item->item_description,
                     "hsn_code" => $item->hsn_code,
-                    "unit_of_product" =>$item->item_unit ,  // to be discussed
+                    "unit_of_product" => $item->item_unit,  // to be discussed
                     "cgst_rate" => round($cgst_rate, 2),
-                    "sgst_rate" => round($sgst_rate,2),
+                    "sgst_rate" => round($sgst_rate, 2),
                     "igst_rate" => round($igst_rate, 2),
                     "cess_rate" => 0,
                     "quantity" => $item->total_item_quantity,
@@ -170,126 +171,127 @@ class EwayBillController extends Controller
                 "document_type" => $order->document_type,//"Tax Invoice",
                 "document_number" => strtoupper($order->order_invoice_number),
                 "document_date" => date('d/m/Y', strtotime($order->order_invoice_date)),
-                "data_source"=>'erp',
+                "data_source" => 'erp',
                 "other_value" => 0,//round($total_other_charges,2),  need jk to discuss
-                "total_invoice_value" =>  round($order->total_after_tax,2),
-                "taxable_amount" =>  round($order->total_sale_value,2),
+                "total_invoice_value" => round($order->total_after_tax, 2),
+                "taxable_amount" => round($order->total_sale_value, 2),
                 "cess_amount" => 0,
                 "cess_nonadvol_value" => 0,
                 "itemList" => $items_list
             ];
 
-            if($order->billFromAddress->state_code == $order->billToAddress->state_code){
+            if ($order->billFromAddress->state_code == $order->billToAddress->state_code) {
 
 
-                $ewayBillData['cgst_amount']=round($order->total_tax/2,2);
-                $ewayBillData['sgst_amount']=round($order->total_tax/2,2);
-                $ewayBillData['igst_amount']=0;
+                $ewayBillData['cgst_amount'] = round($order->total_tax / 2, 2);
+                $ewayBillData['sgst_amount'] = round($order->total_tax / 2, 2);
+                $ewayBillData['igst_amount'] = 0;
 
-            }else{
-                $ewayBillData['igst_amount']=round($order->total_tax/2,2);
-                $ewayBillData['cgst_amount']=0;
-                $ewayBillData['sgst_amount']=0;
+            } else {
+                $ewayBillData['igst_amount'] = round($order->total_tax / 2, 2);
+                $ewayBillData['cgst_amount'] = 0;
+                $ewayBillData['sgst_amount'] = 0;
 
             }
 
 
-
-            if($order->billFromParty)
-            {
-                $ewayBillData['gstin_of_consignor']=$order->billFromParty->party_gstn;
-                $ewayBillData['legal_name_of_consignor']=$order->billFromParty->party_legal_name;
+            if ($order->billFromParty) {
+                $ewayBillData['gstin_of_consignor'] = $order->billFromParty->party_gstn;
+                $ewayBillData['legal_name_of_consignor'] = $order->billFromParty->party_legal_name;
             }
             //  Address of consignor i.e. Seller
-            if(!empty($order->dispatchFromAddress->address_id))
-            {
-                $ewayBillData['address1_of_consignor']=$order->dispatchFromAddress->address_line;
-                $ewayBillData['address2_of_consignor']=$order->dispatchFromAddress->address_line;
-                $ewayBillData['place_of_consignor']=strtoupper($order->dispatchFromAddress->city);
-                $ewayBillData['pincode_of_consignor']=$order->dispatchFromAddress->pincode;
+            if (!empty($order->dispatchFromAddress->address_id)) {
+                $ewayBillData['address1_of_consignor'] = $order->dispatchFromAddress->address_line;
+                $ewayBillData['address2_of_consignor'] = $order->dispatchFromAddress->address_line;
+                $ewayBillData['place_of_consignor'] = strtoupper($order->dispatchFromAddress->city);
+                $ewayBillData['pincode_of_consignor'] = $order->dispatchFromAddress->pincode;
 
-                $ewayBillData['state_of_consignor']=strtoupper($order->dispatchFromAddress->state);
-                $ewayBillData['actual_from_state_name']=strtoupper($order->dispatchFromAddress->state);
-            }
-            else{
-                $ewayBillData['address1_of_consignor']=$order->billFromAddress->address_line;
-                $ewayBillData['address2_of_consignor']=$order->billFromAddress->address_line;
-                $ewayBillData['place_of_consignor']=strtoupper($order->billFromAddress->city);
-                $ewayBillData['pincode_of_consignor']=$order->billFromAddress->pincode;
-                $ewayBillData['state_of_consignor']=strtoupper($order->billFromAddress->state);
-                $ewayBillData['actual_from_state_name']=strtoupper($order->billFromAddress->state);
+                $ewayBillData['state_of_consignor'] = strtoupper($order->dispatchFromAddress->state);
+                $ewayBillData['actual_from_state_name'] = strtoupper($order->dispatchFromAddress->state);
+            } else {
+                $ewayBillData['address1_of_consignor'] = $order->billFromAddress->address_line;
+                $ewayBillData['address2_of_consignor'] = $order->billFromAddress->address_line;
+                $ewayBillData['place_of_consignor'] = strtoupper($order->billFromAddress->city);
+                $ewayBillData['pincode_of_consignor'] = $order->billFromAddress->pincode;
+                $ewayBillData['state_of_consignor'] = strtoupper($order->billFromAddress->state);
+                $ewayBillData['actual_from_state_name'] = strtoupper($order->billFromAddress->state);
             }
             // address of consignee i.e. purchaser/Buyer
-            if($order->billFromParty)
-            {
-                $ewayBillData['gstin_of_consignee']=$order->billToParty->party_gstn;
-                $ewayBillData['legal_name_of_consignee']=$order->billToParty->party_legal_name;
+            if ($order->billFromParty) {
+                $ewayBillData['gstin_of_consignee'] = $order->billToParty->party_gstn;
+                $ewayBillData['legal_name_of_consignee'] = $order->billToParty->party_legal_name;
             }
-            if(!empty($order->shipToAddress->address_id))
-            {
-                $ewayBillData['address1_of_consignee']=$order->shipToAddress->address_line;
-                $ewayBillData['address2_of_consignee']=$order->shipToAddress->address_line;
-                $ewayBillData['place_of_consignee']=strtoupper($order->shipToAddress->city);
-                $ewayBillData['pincode_of_consignee']=$order->shipToAddress->pincode;
+            if (!empty($order->shipToAddress->address_id)) {
+                $ewayBillData['address1_of_consignee'] = $order->shipToAddress->address_line;
+                $ewayBillData['address2_of_consignee'] = $order->shipToAddress->address_line;
+                $ewayBillData['place_of_consignee'] = strtoupper($order->shipToAddress->city);
+                $ewayBillData['pincode_of_consignee'] = $order->shipToAddress->pincode;
 
-                $ewayBillData['state_of_supply']=strtoupper($order->shipToAddress->state);
-                $ewayBillData['actual_to_state_name']=strtoupper($order->shipToAddress->state);
+                $ewayBillData['state_of_supply'] = strtoupper($order->shipToAddress->state);
+                $ewayBillData['actual_to_state_name'] = strtoupper($order->shipToAddress->state);
 
-            }else{
+            } else {
 
-                $ewayBillData['address1_of_consignee']=$order->billToAddress->address_line;
-                $ewayBillData['address2_of_consignee']=$order->billToAddress->address_line;
-                $ewayBillData['place_of_consignee']=strtoupper($order->billToAddress->city);
-                $ewayBillData['pincode_of_consignee']=$order->billToAddress->pincode;
+                $ewayBillData['address1_of_consignee'] = $order->billToAddress->address_line;
+                $ewayBillData['address2_of_consignee'] = $order->billToAddress->address_line;
+                $ewayBillData['place_of_consignee'] = strtoupper($order->billToAddress->city);
+                $ewayBillData['pincode_of_consignee'] = $order->billToAddress->pincode;
 
-                $ewayBillData['state_of_supply']=strtoupper($order->billToAddress->state);
-                $ewayBillData['actual_to_state_name']=strtoupper($order->billToAddress->state);
+                $ewayBillData['state_of_supply'] = strtoupper($order->billToAddress->state);
+                $ewayBillData['actual_to_state_name'] = strtoupper($order->billToAddress->state);
             }
 
-            if($order->shipToAddress->address_id && $order->dispatchFromAddress->address_line)
-            {
-                $ewayBillData['transaction_type']=1;
+            if ($order->shipToAddress->address_id && $order->dispatchFromAddress->address_line) {
+                $ewayBillData['transaction_type'] = 1;
             }
 
 
-            if($order->transporter_name=='SELF')
-            {
-                $ewayBillData['transportation_mode']=$order->transportation_mode;
-                $ewayBillData['vehicle_number']=$order->vehicle_no;
-                $ewayBillData['vehicle_type']=$order->vehicle_type;
+            if ($order->transporter_name == 'SELF') {
+                $ewayBillData['transportation_mode'] = $order->transportation_mode;
+                $ewayBillData['vehicle_number'] = $order->vehicle_no;
+                $ewayBillData['vehicle_type'] = $order->vehicle_type;
 
-            }else{
-                $ewayBillData['transporter_id'] = $order->transporter_id ;// GSTN of transporter
+            } else {
+                $ewayBillData['transporter_id'] = $order->transporter_id;// GSTN of transporter
 
             }
 
-            $response= $this->masterIndiaService->generateEwayBill($ewayBillData);
-            if($response instanceof Response){
+            $response = $this->masterIndiaService->generateEwayBill($ewayBillData);
+            if ($response instanceof Response) {
                 // update psos for error
 
-                $order->update( [
+                $order->update([
                     'eway_status' => 'E',
-                    'eway_status_message' => json_decode($valid->getContent(), true)['message']??''
+                    'eway_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
                 ]);
-                return response()->json(['status'=>false,'message'=>$valid->getContent(), true['message']??'','data'=>[]]);
+                return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
             }
 
             $order->update([
                 'eway_status' => 'C',
-                'eway_status_message' => 'Ewaybill has been created by :'.($response['display_message']??''),
-                'eway_bill_no'=>$response['message']['ewayBillNo']
+                'eway_status_message' => 'Ewaybill has been created by :' . ($response['display_message'] ?? ''),
+                'eway_bill_no' => $response['message']['ewayBillNo']
             ]);
 
-            if(!$this->ewayBillData->saveEwayBillData($ewayBillData, $response))
+            $isRecordCreated = $this->masterIndiaEwayBillTransaction->create(
+                [
+                    'order_id' => $order->order_id,
+                    'eway_bill_no' => $response['message']['ewayBillNo'],
+                    'eway_bill_date' => date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $response['message']['ewayBillDate']))),
+                    'valid_upto' => date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $response['message']['validUpto']))),
+                    'eway_bill_url' => $response['message']['url'],
+                    'ebill_status' => 'Created',
+                    'alert_message' => $response['message']['alert'],
+                    'request_id' => $response['requestId'],
+                ]);
+            if (!$isRecordCreated)
+                return response()->json(['status' => false, 'message' => 'Ewaybill created but failed to save response', 'data' => []]);
 
-                return response()->json(['status'=>false,'message'=>'Ewaybill created but failed to save response','data'=>[]]);
-
-
-                return response()->json(['status'=>true,'message'=> 'EwayBill has been created by :'.($response['display_message'])??'','data'=>[]]);
+            return response()->json(['status' => true, 'message' => 'EwayBill has been created by :' . ($response['display_message']) ?? '', 'data' => []]);
         }
 
 
-        return response()->json(['status'=>true,'message'=>'Order Not found','data'=>[]]);
+        return response()->json(['status' => true, 'message' => 'Order Not found', 'data' => []]);
 
     }
 
@@ -334,7 +336,8 @@ class EwayBillController extends Controller
      * "message": "{error message}",
      *  }
      */
-    public function cancelEwayBill(Request $request,MiOrder $order){
+    public function cancelEwayBill(Request $request, MiOrder $order)
+    {
 
         $order = MiOrder::with([
 
@@ -343,46 +346,55 @@ class EwayBillController extends Controller
         ])
             ->where('order_id', $order->order_id)
             ->first();
-      $errors=Validator::make($request->all(),
-          [
-              'order_id'=>'required|integer',
-              'cancel_reason' => 'required|in:duplicate,order-cancelled,incorrect-details,others',
-              'cancel_remarks' => 'required',
+        $errors = Validator::make($request->all(),
+            [
+                'order_id' => 'required|integer',
+                'cancel_reason' => 'required|in:duplicate,order-cancelled,incorrect-details,others',
+                'cancel_remarks' => 'required',
 
-          ])
-          ->errors()
-          ->toArray();
-         if(!$order->eway_bill_no)
-         {
-             return response()->json(['status'=>false,'message'=>'Ewaybill is not created','data'=>[]]);
-         }
+            ])
+            ->errors()
+            ->toArray();
+        if (!$order->eway_bill_no) {
+            return response()->json(['status' => false, 'message' => 'Ewaybill is not created', 'data' => []]);
+        }
 
-          if (count($errors)) {
-              //return json_response(422, 'Invalid or Missing parameters', compact('errors'));
+        if (count($errors)) {
+            //return json_response(422, 'Invalid or Missing parameters', compact('errors'));
 
-              return response()->json(['status'=>false,'message'=>'Invalid or Missing parameters','data'=>[]]);
-          }
+            return response()->json(['status' => false, 'message' => 'Invalid or Missing parameters', 'data' => []]);
+        }
 
-        $params =[
+        $params = [
 
             "userGstin" => $order->billFromParty->party_gstn,
             "eway_bill_number" => $order->eway_bill_no,
-            "reason_of_cancel" => $this->cancellation_reasons[$request->cancel_reason]??'Others',
-            "cancel_remark" =>$request->cancel_remarks ?? '',
+            "reason_of_cancel" => $this->cancellation_reasons[$request->cancel_reason] ?? 'Others',
+            "cancel_remark" => $request->cancel_remarks ?? '',
             "data_source" => "erp"
         ];
 
-      $response= $this->masterIndiaService->cancelEwayBill($params);
+        $response = $this->masterIndiaService->cancelEwayBill($params);
 
-        if(!$this->ewayBillData->cancelEwayBill($this->ewayBillData, $params, $response))
+        $isRecordUpdated = $this->masterIndiaEwayBillTransaction->update(
 
-        return response()->json(['status'=>false,'message'=>'Eway Bill cancelled but failed to save response','data'=>[]]);
+            ['order_id' => $order->order_id],
+
+            [
+                'ebill_status' => 'Cancelled',
+                'cancellation_reason' => $params['cancel_reason'],
+                'cancellation_remarks' => $params['cancel_remarks']
+            ]
+        );
+
+        if (!$isRecordUpdated)
+            return response()->json(['status' => false, 'message' => 'Eway Bill cancelled but failed to save response', 'data' => []]);
 
         $order->update([
             'eway_status' => 'X',
             'eway_status_message' => 'Ewaybill has been cancelled'
         ]);
-        return response()->json(['status'=>true,'message'=>'Ewaybill has been cancelled','data'=>[]]);
+        return response()->json(['status' => true, 'message' => 'Ewaybill has been cancelled', 'data' => []]);
     }
 
     /**
@@ -426,23 +438,24 @@ class EwayBillController extends Controller
      * "message": "{error message}",
      *  }
      */
-    public function updateEwayBill(Request $request,MiOrder $order){
+    public function updateEwayBill(Request $request, MiOrder $order)
+    {
 
-        $errors=Validator::make($request->all(),
+        $errors = Validator::make($request->all(),
             [
-                'action'=>'required|in:update-vehicle,update-transporter,extend-validity',
-                'order_id'=>'required|integer',
-                'extension_reason'=>'nullable|required_if:action,extend-validity|in:natural-calamity,law-order,transshipment,accident,others',
-                'extension_remarks'=>'required_if:action,extend-validity',
-                'vehicle_update_reason'=>'required_if:action,update-vehicle',
-                'vehicle_update_remarks'=>'required_if:action,update-vehicle',
+                'action' => 'required|in:update-vehicle,update-transporter,extend-validity',
+                'order_id' => 'required|integer',
+                'extension_reason' => 'nullable|required_if:action,extend-validity|in:natural-calamity,law-order,transshipment,accident,others',
+                'extension_remarks' => 'required_if:action,extend-validity',
+                'vehicle_update_reason' => 'required_if:action,update-vehicle',
+                'vehicle_update_remarks' => 'required_if:action,update-vehicle',
             ])
             ->errors()
             ->toArray();
 
         if (count($errors)) {
-           // return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-            return response()->json(['status'=>false,'message'=>'Invalid or Missing parameters','data'=>[]]);
+            // return json_response(422, 'Invalid or Missing parameters', compact('errors'));
+            return response()->json(['status' => false, 'message' => 'Invalid or Missing parameters', 'data' => []]);
         }
         $order = MiOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -457,56 +470,69 @@ class EwayBillController extends Controller
             ->where('order_id', $order->order_id)
             ->first();
 
-        if(!$order->eway_bill_no)
-        {
-            return response()->json(['status'=>false,'message'=>'EwayBill is not created','data'=>[]]);
+        if (!$order->eway_bill_no) {
+            return response()->json(['status' => false, 'message' => 'EwayBill is not created', 'data' => []]);
         }
 
-        if($request->action == 'update-vehicle'){
+        if ($request->action == 'update-vehicle') {
 
             $params = [
 
                 "userGstin" => $this->company_gstn,
                 "eway_bill_number" => $order->eway_bill_no,
-                "vehicle_number" =>  $order->vehicle_no,
-                "vehicle_type" =>  $order->vehicle_type,
+                "vehicle_number" => $order->vehicle_no,
+                "vehicle_type" => $order->vehicle_type,
                 "place_of_consignor" => strtoupper($order->billFromParty->city),
-                "state_of_consignor" => strtoupper($order->billFromParty->state ),
-                "reason_code_for_vehicle_updation" => $this->vehicle_update_reason[$request->vehicle_update_reason]??'Others',
+                "state_of_consignor" => strtoupper($order->billFromParty->state),
+                "reason_code_for_vehicle_updation" => $this->vehicle_update_reason[$request->vehicle_update_reason] ?? 'Others',
                 "reason_for_vehicle_updation" => $request->vehicle_update_remarks,
                 // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
                 // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
                 "mode_of_transport" => $request->transportation_mode,
-                "data_source" =>"erp"
+                "data_source" => "erp"
             ];
 
-            $response= $this->masterIndiaService->updateVehicleNumber($params);
+            $response = $this->masterIndiaService->updateVehicleNumber($params);
+            $this->masterIndiaEwayBillTransaction->update(
+
+                ['order_id' => $order->order_id],
+
+                []
+
+            );
 
 
-        }else if($request->action == 'update-transporter'){
+        } else if ($request->action == 'update-transporter') {
 
             $params = [
 
-                "userGstin" =>$this->company_gstn,
+                "userGstin" => $this->company_gstn,
                 "eway_bill_number" => $order->eway_bill_no,
                 "transporter_id" => $order->transporter_id // GSTN of transporter
             ];
-            $response= $this->masterIndiaService->updateTransporterID($params);
+            $response = $this->masterIndiaService->updateTransporterID($params);
+            $this->masterIndiaEwayBillTransaction->update(
 
-        }else if($request->action == 'extend-validity'){
+                ['order_id' => $order->order_id],
+
+                []
+
+            );
+
+        } else if ($request->action == 'extend-validity') {
 
             $params = [
 
                 "userGstin" => $this->company_gstn,
                 "eway_bill_number" => $order->eway_bill_no,
                 "place_of_consignor" => strtoupper($order->billFromParty->city),
-                "pincode_of_consignor" =>$order->billFromParty->pincode,
+                "pincode_of_consignor" => $order->billFromParty->pincode,
                 "state_of_consignor" => strtoupper($order->billFromParty->state),
                 "remaining_distance" => 250, // to be discused it is required
                 // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
                 // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
-                "extend_validity_reason" => $this->extension_reasons[$request->extension_reason]??'Others',
-                "extend_remarks" =>$request->extension_remarks,
+                "extend_validity_reason" => $this->extension_reasons[$request->extension_reason] ?? 'Others',
+                "extend_remarks" => $request->extension_remarks,
                 "from_pincode" => $order->billFromParty->pincode,
                 "consignment_status" => "M", // not required for in movement status
                 // "transit_type" => "Road", //Roan,Warehouse not required for consignment status M
@@ -514,20 +540,27 @@ class EwayBillController extends Controller
                 // "address_line2" => "Dehradun", // not required for consignment status M
                 // "address_line3" => "Dehradun" // not required for consignment status M
             ];
-            if($order->transporter_name=='SELF')
-            {
+            if ($order->transporter_name == 'SELF') {
                 $params["vehicle_number"] = $order->vehicle_no; // $data['transporter_vehicle_number']; //to be discussed
-                $params["mode_of_transport"] =$order->transportation_mode;
+                $params["mode_of_transport"] = $order->transportation_mode;
 
-            }else{
-                    // Need to be discussed JK
+            } else {
+                // Need to be discussed JK
                 $params["vehicle_number"] = $order->vehicle_no;
             }
 
 
-            $response= $this->masterIndiaService->extendBillValidity($params);
+            $response = $this->masterIndiaService->extendBillValidity($params);
 
-        }else{
+            $this->masterIndiaEwayBillTransaction->update(
+
+                ['order_id' => $order->order_id],
+
+                []
+
+            );
+
+        } else {
 
             return json_response(400, 'Invalid Update Action');
         }
@@ -650,93 +683,24 @@ class EwayBillController extends Controller
      * "message": "{error message}",
      *  }
      */
-    public function getEwayBillDetails(Request $request){
-        $errors=Validator::make($request->all(),
-          [
-              'sell_invoice_ref_no'=>'required|integer',
-              'eway_service'=>'required|in:MasterIndia'
-          ])
-          ->errors()
-          ->toArray();
+    public function getEwayBillDetails(Request $request,MiOrder $miOrder)
+    {
+        $order = MiOrder::where('order_id', $miOrder->order_id)->first();
 
-        if (count($errors)) {
-            return json_response(422, 'Invalid or Missing parameters', compact('errors'));
+        if($order->isEmpty()){
+            return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
         }
-        return $this->ewayBillManager->getEwayBillDetails($request->all());
+
+        $params = [
+            'action' => 'GetEwayBill',
+
+            "gstin" => $this->company_gstn,
+            'eway_bill_number' => $order->eway_bill_no,
+        ];
+
+        return $this->masterIndiaService->getEwayBillDetails($params);
     }
 
-    /**
-     * Get Api Count
-     *
-     * Provides api usage data
-     *
-     * @header Content-Type application/x-www-form-urlencoded
-     * @header Authorization {API Key Here}
-     *
-     * @bodyParam eway_service string required Supported Values are: MasterIndia. Example: MasterIndia
-     * @bodyParam account_email string required Registered email with masterindia. Example: mayank.gupta@recycledevice.com
-     * @bodyParam from_date string required Date in yyyy-mm-dd format. Example: 2022-11-12
-     * @bodyParam to_date string required Date in yyyy-mm-dd format. Example: 2022-12-12
-     *
-     * @response scenario=success {
-     * "results":{
-     * "apiCount":113,
-     * "status":"Success",
-     * "code":200
-     * }
-     * }
-     *
-     * @response 400 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     *
-     * @response 422 scenario=failed {
-     * "success": false,
-     * "message": "Invalid or missing parameters"
-     * "errors" : []
-     * }
-     *
-     * @response 500 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     */
-    public function getApiCounts(Request $request){
-      $errors=Validator::make($request->all(),
-          [
-              'eway_service' => 'required',
-              'account_email' => 'required',
-              'from_date' => 'required|date_format:Y-m-d',
-              'to_date' => 'required|date_format:Y-m-d',
-          ])
-          ->errors()
-          ->toArray();
 
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
-
-      return $this->ewayBillManager->getApiCounts($request->all());
-
-
-    }
-
-    // public function getGSTINDetails(Request $request){
-    //
-    //     $errors=Validator::make($request->all(),
-    //         [
-    //             'sell_invoice_ref_no'=>'required|integer',
-    //             'eway_service'=>'required|in:MasterIndia'
-    //         ])
-    //         ->errors()
-    //         ->toArray();
-    //
-    //     if (count($errors)) {
-    //         return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-    //     }
-    //
-    //     return $this->ewayBillManager->getGSTINDetails($request->all());
-    // }
 
 }

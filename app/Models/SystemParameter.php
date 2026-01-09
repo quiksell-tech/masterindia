@@ -10,19 +10,6 @@ class SystemParameter extends Model
 
     protected $primaryKey = 'system_parameter_id';
 
-    public $incrementing = true;
-
-    protected $keyType = 'int';
-
-    /**
-     * Laravel timestamps are disabled
-     * because table uses custom timestamp column
-     */
-    public $timestamps = false;
-
-    /**
-     * Mass assignable fields
-     */
     protected $fillable = [
         'sysprm_provider',
         'sysprm_name',
@@ -31,6 +18,7 @@ class SystemParameter extends Model
         'last_updated_by',
         'last_updated_on',
     ];
+
     public static function getSystemParametersByProviderKV(string $provider)
     {
         return self::query()

@@ -2,230 +2,591 @@
 
 namespace App\Http\Controllers\Services;
 
+use App\Models\Admin\MiOrder;
 use App\Http\Controllers\Controller;
-use App\Services\EInvoice\EInvoiceManager;
+use App\Models\Admin\MiOrderItem;
+use App\Models\MasterIndiaEInvoiceTransaction;
+use App\Services\EInvoice\MasterIndiaService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
+
 
 class EInvoiceController extends Controller
 {
-    public function __construct(EInvoiceManager $EInvoiceManager){
-        $this->EInvoiceManager = $EInvoiceManager;
-    }
+    protected $masterIndiaService;
+    protected $masterIndiaEInvoiceTransaction;
+    protected $company_gstn = '06AAICR4029F1ZI';
 
+    public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEInvoiceTransaction $masterIndiaEInvoiceTransaction)
+    {
 
-    public function generateEInvoice(Request $request){
-
-      $errors=Validator::make($request->all(),
-          [
-              'sell_invoice_ref_no'=>'required|integer',
-              'einvoice_service' => 'required',
-          ],
-          [
-              'sell_invoice_ref_no.*'=>'Sell invoice reference number is required',
-          ])
-          ->errors()
-          ->toArray();
-
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
-      return $this->EInvoiceManager->generateEInvoice($request->all());
+        $this->masterIndiaService = $masterIndiaService;
+        $this->masterIndiaEInvoiceTransaction = $masterIndiaEInvoiceTransaction;
 
     }
 
-    public function generateCreditNote(Request $request){
+    public function getEInvoice(Request $request, MiOrder $miOrder)
+    {
 
-        $errors=Validator::make($request->all(),
-            [
-                'credit_note_ref_no'=>'required',
-                'einvoice_service' => 'required',
-            ],
-            [
-                'credit_note_ref_no.*'=>'Credit note reference number is required',
-            ])
-            ->errors()
-            ->toArray();
-
-        if (count($errors)) {
-            return json_response(422, 'Invalid or Missing parameters', compact('errors'));
+        $order = MiOrder::where('order_id', $miOrder->order_id)->get();
+        if($order->isEmpty()){
+            return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
         }
-        return $this->EInvoiceManager->generateCreditNote($request->all());
+        $params = [
+
+            "gstin" => $this->company_gstn,
+            "irn" => $order->irn_no,
+        ];
+
+        $response = $this->masterIndiaService->getEInvoice($params);
+    }
+
+    public function generateCreditNote(Request $request, MiOrder $miOrder)
+    {
+
+        $items = MiOrderItem::where('order_id', $miOrder->order_id)->get();
+        $order = MiOrder::with([
+            'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'billToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'shipToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'dispatchFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'billFromAddress',
+            'billToAddress',
+            'shipToAddress',
+            'dispatchFromAddress',
+        ])
+            ->where('order_id', $miOrder->order_id)
+            ->first();
+
+        if (empty($items)) {
+            return response()->json(['status' => false, 'message' => 'Order Items Are not added', 'data' => []]);
+        }
+
+        if (empty($order)) {
+            return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
+        }
+        // validate GSTN
+        if (!empty($order->billToParty->party_gstn)) {
+            if ($order->supply_type == 'outward') {
+                $valid = $this->masterIndiaService->getGSTINDetails([
+                    'buyer_gstin' => $order->billToParty->party_gstn,
+                    'sell_invoice_ref_no' => $order->order_invoice_number,
+                    'company_gstin' => $this->company_gstn,
+                ]);
+
+            } else {
+
+                $valid = $this->masterIndiaService->getGSTINDetails([
+                    'buyer_gstin' => $order->billFromParty->party_gstn,
+                    'sell_invoice_ref_no' => $this->company_gstn,
+                    'company_gstin' => $this->company_gstn,
+                ]);
+            }
+
+
+            if ($valid instanceof Response) {
+                // update psos for error
+
+                $order->update([
+                    'irn_status' => 'E',
+                    'irn_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
+                ]);
+                return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
+            }
+
+            if ($valid['gstin_status'] != 'active') {
+
+                // set error to skip this record for batch process
+
+                $order->update([
+                    'irn_status' => 'E',
+                    'irn_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
+                ]);
+                return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
+
+            }
+
+        }
+
+        if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+
+            $total_igst_value = 0;
+            $total_sgst_value = $order->total_tax / 2;
+            $total_cgst_value = $order->total_tax / 2;
+        } else {
+            $total_igst_value = $order->total_tax;
+            $total_sgst_value = 0;
+            $total_cgst_value = 0;
+        }
+
+
+        $items_list = [];
+        $i = 1;
+
+        foreach ($items as $item) {
+
+            $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
+            $taxAmount = ($taxableAmount * $item->tax_percentage) / 100;
+            $afterTaxValue = $taxableAmount + $taxAmount;
+
+            if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+
+                $igst_value = 0;
+                $cgst_value = $afterTaxValue / 2;
+                $sgst_value = $afterTaxValue / 2;
+
+            } else {
+                $sgst_value = 0;
+                $cgst_value = 0;
+                $igst_value = $afterTaxValue;
+            }
+
+            $items_list[] = [
+                "item_serial_number" => $i++,
+                "product_description" => $item->item_name,
+                "is_service" => 'N',
+                "hsn_code" => $item->hsn_code,
+                "bar_code" => '',
+                "quantity" => $item->total_item_quantity,
+                // "free_quantity" => 0,
+                "unit" => $item->item_unit,
+                "unit_price" => round($item->price_per_unit, 2),
+                "total_amount" => round($afterTaxValue, 2),
+                // "pre_tax_value" => 0,
+                "discount" => 0,
+                "other_charge" => 0,
+                "assessable_value" => round($taxableAmount, 2),
+                "gst_rate" => $item->tax_percentage,
+                "igst_amount" => round($igst_value, 2),
+                "cgst_amount" => round($cgst_value, 2),
+                "sgst_amount" => round($sgst_value, 2),
+
+                "total_item_value" => round($afterTaxValue, 2),
+
+            ];
+        }
+
+        $params = [
+
+            "user_gstin" => $this->company_gstn,
+            "data_source" => "erp",
+            "transaction_details" => [
+                "supply_type" => "B2B",
+                "charge_type" => "N",
+                "igst_on_intra" => "N",
+                "ecommerce_gstin" => ""
+            ],
+            "document_details" => [
+                "document_type" => "CRN",
+                "document_number" => strtoupper($order->order_invoice_number),
+                "document_date" => date('d/m/Y', strtotime($order->order_invoice_date))
+            ],
+            "seller_details" => [
+                "gstin" => $order->billFromParty->party_gstn,
+                "legal_name" => $order->billFromParty->party_legal_name,
+                // "trade_name" => "MastersIndia UP",
+                "address1" => $order->billFromAddress->address_line,
+                "address2" => '',
+                // "address2" => "Vila",
+                "location" => strtoupper($order->billFromAddress->city),
+                "pincode" => $order->billFromAddress->pincode,
+                "state_code" => strtoupper($order->billFromAddress->state_code),
+                "phone_number" => $order->billFromAddress->phone,
+                // "email" => ""
+            ],
+            "buyer_details" => [
+                "gstin" => $order->billToParty->party_gstn,
+                "legal_name" => $order->billToParty->party_legal_name,
+                "trade_name" => $order->billToParty->party_trade_name,
+                "address1" => $order->billToAddress->address_line,
+                "address2" => '',
+                "location" => strtoupper($order->billToAddress->city),
+                "pincode" => $order->billToAddress->pincode,
+                "place_of_supply" => $order->billToAddress->state_code,
+                "state_code" => strtoupper($order->billToAddress->state_code),
+                "phone_number" => $order->billToAddress->phone,
+                // "email" => ""
+            ],
+            "reference_details" => [
+
+                "preceding_document_details" => [[
+                    "reference_of_original_invoice" => strtoupper($order->order_invoice_number),
+                    "preceding_invoice_date" => date('d/m/Y', strtotime($order->order_invoice_date)),
+                    // "other_reference" => "2334"
+                ]],
+
+            ],
+
+            "value_details" => [
+                "total_assessable_value" => round($order->total_sale_value, 2),
+                "total_cgst_value" => round($total_cgst_value, 2),
+                "total_sgst_value" => round($total_sgst_value, 2),
+                "total_igst_value" => round($total_igst_value, 2),
+
+                "total_invoice_value" => round($order->total_after_tax, 2),
+
+            ],
+            "item_list" => $items_list
+        ];
+
+        if (!empty($order->dispatchFromAddress->address_id)) {
+            $params["dispatch_details"] = [
+                "company_name" => $order->dispatchFromParty->party_legal_name,
+                "address1" => $order->dispatchFromAddress->address_line,
+                "address2" => '',
+                // "address2" => "Vila",
+                "location" => strtoupper($order->dispatchFromAddress->city),
+                "pincode" => $order->dispatchFromAddress->pincode,
+                "state_code" => strtoupper($order->dispatchFromAddress->state_code),
+            ];
+
+        } else {
+            $params["dispatch_details"] = [
+                "company_name" => $order->billFromParty->party_legal_name,
+                "address1" => $order->billFromAddress->address_line,
+                "address2" => '',
+                // "address2" => "Vila",
+                "location" => strtoupper($order->billFromAddress->city),
+                "pincode" => $order->billFromAddress->pincode,
+                "state_code" => strtoupper($order->billFromAddress->state_code),
+            ];
+        }
+
+        if (!empty($order->dispatchFromAddress->address_id)) {
+            $params["ship_details"] = [
+                // "gstin" => "05AAAPG7885R002",
+                "legal_name" => $order->shipToParty->party_legal_name,
+                "trade_name" => $order->shipToParty->party_trade_name,
+                "address1" => $order->shipToAddress->address_line,
+                "address2" => '',
+                "location" => strtoupper($order->shipToAddress->city),
+                "pincode" => $order->shipToAddress->pincode,
+                "state_code" => strtoupper($order->shipToAddress->state_code)
+            ];
+        } else {
+
+            $params["ship_details"] = [
+                // "gstin" => "05AAAPG7885R002",
+                "legal_name" => $order->billToParty->party_legal_name,
+                "trade_name" => $order->billToParty->party_trade_name,
+                "address1" => $order->billToAddress->address_line,
+                "address2" => '',
+                "location" => strtoupper($order->billToAddress->city),
+                "pincode" => $order->billToAddress->pincode,
+                "state_code" => strtoupper($order->billToAddress->state_code)
+            ];
+        }
+
+
+        $response = $this->masterIndiaService->generateCreditNote($params);
 
     }
 
-    public function cancelEInvoice(Request $request){
-      $errors=Validator::make($request->all(),
-          [
-              'sell_invoice_ref_no'=>'required|integer',
-              'cancel_reason' => 'required|in:incorrect-details,duplicate',
-              'cancel_remarks' => 'required',
-              'einvoice_service' => 'required',
-          ],
-          [
-              'sell_invoice_ref_no.*'=>'Sell invoice reference number is required',
-          ])
-          ->errors()
-          ->toArray();
+    public function cancelEInvoice(Request $request, MiOrder $miOrder)
+    {
 
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
-      return $this->EInvoiceManager->cancelEInvoice($request->all());
-    }
+        $order = MiOrder::where('order_id', $miOrder->order_id)->get();
+        $params = [
 
-    public function getEInvoice(Request $request){
-      $errors=Validator::make($request->all(),
-          [
-              'sell_invoice_ref_no'=>'required|integer',
-              'einvoice_service' => 'required',
-          ],
-          [
-              'sell_invoice_ref_no.*'=>'Sell invoice reference number is required',
-          ])
-          ->errors()
-          ->toArray();
+            "user_gstin" => $this->company_gstn,
+            "irn" => $order->irn_no,
+            "cancel_reason" => $request->cancellation_reasons,
+            "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
+        ];
 
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
-      return $this->EInvoiceManager->getEInvoice($request->all());
-    }
+        $response = $this->masterIndiaService->cancelEInvoice($params);
 
-    public function getGSTINDetails(Request $request){
-      $errors=Validator::make($request->all(),
-          [
-              'gstin_number'=>'required',
-              'einvoice_service' => 'required',
-          ],
-          [
-              'gstin_number.*'=>'GSTIN number is required',
-          ])
-          ->errors()
-          ->toArray();
+        $isUpdated = $this->masterIndiaEInvoiceTransaction->update(['order_id' => $order->order_id], [
+            'invoice_status' => 'Cancelled',
+            'cancellation_reason' => $params["cancel_reason"],
+            'cancellation_remarks' => $params['cancel_remarks'],
+            'status_received' => 'CNL'
+        ]);
 
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
-      return $this->EInvoiceManager->getGSTINDetails($request->all());
-    }
+        if ($isUpdated) {
+            $order->update([
+                'irn_status' => 'X',
+                'irn_status_message' => 'Einvoice has been cancelled ' . ($response['display_message'] ?? '')
+            ]);
+            return response()->json(['status' => true, 'message' => 'Einvoice has been cancelled at', 'data' => []]);
+        }
 
-    public function syncGSTINDetails(Request $request){
-      $errors=Validator::make($request->all(),
-          [
-              'gstin_number'=>'required',
-              'einvoice_service' => 'required',
-          ],
-          [
-              'gstin_number.*'=>'GSTIN number is required',
-          ])
-          ->errors()
-          ->toArray();
-
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
-      return $this->EInvoiceManager->syncGSTINDetails($request->all());
-    }
-
-    public function getApiCounts(Request $request){
-      $errors=Validator::make($request->all(),
-          [
-              'einvoice_service' => 'required',
-              'account_email' => 'required',
-              'from_date' => 'required|date_format:Y-m-d',
-              'to_date' => 'required|date_format:Y-m-d',
-          ])
-          ->errors()
-          ->toArray();
-
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
-
-      return $this->EInvoiceManager->getApiCounts($request->all());
+        return response()->json(['status' => false, 'message' => 'Invoice cancelled but failed to save response', 'data' => []]);
 
 
     }
 
-    // public function generateBulkEInvoice(Request $request){
-    //   $errors=Validator::make($request->all(),
-    //       [
-    //           'sell_invoice_ref_no'=>'required|integer',
-    //           'einvoice_service' => 'required',
-    //       ],
-    //       [
-    //           'sell_invoice_ref_no.*'=>'Sell invoice reference number is required',
-    //       ])
-    //       ->errors()
-    //       ->toArray();
-    //
-    //   if (count($errors)) {
-    //       return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-    //   }
-    //   return $this->EInvoiceManager->generateBulkEInvoice(null);
-    // }
+    public function generateEInvoice(Request $request, MiOrder $miOrder)
+    {
 
-    /**
-    * Apis related to eway bill using einvoice IRL starts from here
-    * Not Being used for the time
-    *
-    */
+        $items = MiOrderItem::where('order_id', $miOrder->order_id)->get();
+        $order = MiOrder::with([
+            'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'billToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'shipToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'dispatchFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
+            'billFromAddress',
+            'billToAddress',
+            'shipToAddress',
+            'dispatchFromAddress',
+        ])
+            ->where('order_id', $miOrder->order_id)
+            ->first();
 
-    // public function generateEwayBillByIRN(Request $request){
-    //   $errors=Validator::make($request->all(),
-    //       [
-    //           'sell_invoice_ref_no'=>'required|integer',
-    //           'einvoice_service' => 'required',
-    //       ],
-    //       [
-    //           'sell_invoice_ref_no.*'=>'Sell invoice reference number is required',
-    //       ])
-    //       ->errors()
-    //       ->toArray();
-    //
-    //   if (count($errors)) {
-    //       return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-    //   }
-    //   return $this->EInvoiceManager->generateEwayBillByIRN($request->all());
-    // }
-    //
-    // public function getEwayBillDetailsyIRN(Request $request){
-    //   $errors=Validator::make($request->all(),
-    //       [
-    //           'sell_invoice_ref_no'=>'required|integer',
-    //           'einvoice_service' => 'required',
-    //       ],
-    //       [
-    //           'sell_invoice_ref_no.*'=>'Sell invoice reference number is required',
-    //       ])
-    //       ->errors()
-    //       ->toArray();
-    //
-    //   if (count($errors)) {
-    //       return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-    //   }
-    //   return $this->EInvoiceManager->getEwayBillDetailsyIRN($request->all());
-    // }
-    //
-    // public function cancelEwayBillByIRN(Request $request){
-    //   $errors=Validator::make($request->all(),
-    //       [
-    //           'sell_invoice_ref_no'=>'required|integer',
-    //           'einvoice_service' => 'required',
-    //       ],
-    //       [
-    //           'sell_invoice_ref_no.*'=>'Sell invoice reference number is required',
-    //       ])
-    //       ->errors()
-    //       ->toArray();
-    //
-    //   if (count($errors)) {
-    //       return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-    //   }
-    //   return $this->EInvoiceManager->cancelEwayBillByIRN($request->all());
-    // }
+        if (empty($items)) {
+            return response()->json(['status' => false, 'message' => 'Order Items Are not added', 'data' => []]);
+        }
+
+        if (empty($order)) {
+            return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
+        }
+        // validate GSTN
+        if (!empty($order->billToParty->party_gstn)) {
+            if ($order->supply_type == 'outward') {
+                $valid = $this->masterIndiaService->getGSTINDetails([
+                    'buyer_gstin' => $order->billToParty->party_gstn,
+                    'sell_invoice_ref_no' => $order->order_invoice_number,
+                    'company_gstin' => $this->company_gstn,
+                ]);
+
+            } else {
+
+                $valid = $this->masterIndiaService->getGSTINDetails([
+                    'buyer_gstin' => $order->billFromParty->party_gstn,
+                    'sell_invoice_ref_no' => $this->company_gstn,
+                    'company_gstin' => $this->company_gstn,
+                ]);
+            }
 
 
+            if ($valid instanceof Response) {
+                // update psos for error
 
+                $order->update([
+                    'irn_status' => 'E',
+                    'irn_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
+                ]);
+                return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
+            }
+
+            if ($valid['gstin_status'] != 'active') {
+
+                // set error to skip this record for batch process
+
+                $order->update([
+                    'irn_status' => 'E',
+                    'irn_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
+                ]);
+                return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
+
+            }
+
+        }
+
+        if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+
+            $total_igst_value = 0;
+            $total_sgst_value = $order->total_tax / 2;
+            $total_cgst_value = $order->total_tax / 2;
+        } else {
+            $total_igst_value = $order->total_tax;
+            $total_sgst_value = 0;
+            $total_cgst_value = 0;
+        }
+
+
+        $items_list = [];
+        $i = 1;
+
+        foreach ($items as $item) {
+
+            $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
+            $taxAmount = ($taxableAmount * $item->tax_percentage) / 100;
+            $afterTaxValue = $taxableAmount + $taxAmount;
+
+            if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+
+                $igst_value = 0;
+                $cgst_value = $afterTaxValue / 2;
+                $sgst_value = $afterTaxValue / 2;
+
+            } else {
+                $sgst_value = 0;
+                $cgst_value = 0;
+                $igst_value = $afterTaxValue;
+            }
+
+            $items_list[] = [
+                "item_serial_number" => $i++,
+                "product_description" => $item->item_name,
+                "is_service" => 'N',
+                "hsn_code" => $item->hsn_code,
+                "bar_code" => '',
+                "quantity" => $item->total_item_quantity,
+                // "free_quantity" => 0,
+                "unit" => $item->item_unit,
+                "unit_price" => round($item->price_per_unit, 2),
+                "total_amount" => round($afterTaxValue, 2),
+                // "pre_tax_value" => 0,
+                "discount" => 0,
+                "other_charge" => 0,
+                "assessable_value" => round($taxableAmount, 2),
+                "gst_rate" => $item->tax_percentage,
+                "igst_amount" => round($igst_value, 2),
+                "cgst_amount" => round($cgst_value, 2),
+                "sgst_amount" => round($sgst_value, 2),
+
+                "total_item_value" => round($afterTaxValue, 2),
+
+            ];
+        }
+
+        $params = [
+
+            "user_gstin" => $this->company_gstn,
+            "data_source" => "erp",
+            "transaction_details" => [
+                "supply_type" => "B2B",
+                "charge_type" => "N",
+                "igst_on_intra" => "N",
+                "ecommerce_gstin" => ""
+            ],
+            "document_details" => [
+                "document_type" => "INV",
+                "document_number" => strtoupper($order->order_invoice_number),
+                "document_date" => date('d/m/Y', strtotime($order->order_invoice_date))
+            ],
+            "seller_details" => [
+                "gstin" => $order->billFromParty->party_gstn,
+                "legal_name" => $order->billFromParty->party_legal_name,
+                // "trade_name" => "MastersIndia UP",
+                "address1" => $order->billFromAddress->address_line,
+                "address2" => '',
+                // "address2" => "Vila",
+                "location" => strtoupper($order->billFromAddress->city),
+                "pincode" => $order->billFromAddress->pincode,
+                "state_code" => strtoupper($order->billFromAddress->state_code),
+                "phone_number" => $order->billFromAddress->phone,
+                // "email" => ""
+            ],
+            "buyer_details" => [
+                "gstin" => $order->billToParty->party_gstn,
+                "legal_name" => $order->billToParty->party_legal_name,
+                "trade_name" => $order->billToParty->party_trade_name,
+                "address1" => $order->billToAddress->address_line,
+                "address2" => '',
+                "location" => strtoupper($order->billToAddress->city),
+                "pincode" => $order->billToAddress->pincode,
+                "place_of_supply" => $order->billToAddress->state_code,
+                "state_code" => strtoupper($order->billToAddress->state_code),
+                "phone_number" => $order->billToAddress->phone,
+                // "email" => ""
+            ],
+            "reference_details" => [
+
+                "preceding_document_details" => [[
+                    "reference_of_original_invoice" => strtoupper($order->order_invoice_number),
+                    "preceding_invoice_date" => date('d/m/Y', strtotime($order->order_invoice_date)),
+                    // "other_reference" => "2334"
+                ]],
+
+            ],
+
+            "value_details" => [
+                "total_assessable_value" => round($order->total_sale_value, 2),
+                "total_cgst_value" => round($total_cgst_value, 2),
+                "total_sgst_value" => round($total_sgst_value, 2),
+                "total_igst_value" => round($total_igst_value, 2),
+
+                "total_invoice_value" => round($order->total_after_tax, 2),
+
+            ],
+            "item_list" => $items_list
+        ];
+
+        if (!empty($order->dispatchFromAddress->address_id)) {
+            $params["dispatch_details"] = [
+                "company_name" => $order->dispatchFromParty->party_legal_name,
+                "address1" => $order->dispatchFromAddress->address_line,
+                "address2" => '',
+                // "address2" => "Vila",
+                "location" => strtoupper($order->dispatchFromAddress->city),
+                "pincode" => $order->dispatchFromAddress->pincode,
+                "state_code" => strtoupper($order->dispatchFromAddress->state_code),
+            ];
+
+        } else {
+            $params["dispatch_details"] = [
+                "company_name" => $order->billFromParty->party_legal_name,
+                "address1" => $order->billFromAddress->address_line,
+                "address2" => '',
+                // "address2" => "Vila",
+                "location" => strtoupper($order->billFromAddress->city),
+                "pincode" => $order->billFromAddress->pincode,
+                "state_code" => strtoupper($order->billFromAddress->state_code),
+            ];
+        }
+
+        if (!empty($order->dispatchFromAddress->address_id)) {
+            $params["ship_details"] = [
+                // "gstin" => "05AAAPG7885R002",
+                "legal_name" => $order->shipToParty->party_legal_name,
+                "trade_name" => $order->shipToParty->party_trade_name,
+                "address1" => $order->shipToAddress->address_line,
+                "address2" => '',
+                "location" => strtoupper($order->shipToAddress->city),
+                "pincode" => $order->shipToAddress->pincode,
+                "state_code" => strtoupper($order->shipToAddress->state_code)
+            ];
+        } else {
+
+            $params["ship_details"] = [
+                // "gstin" => "05AAAPG7885R002",
+                "legal_name" => $order->billToParty->party_legal_name,
+                "trade_name" => $order->billToParty->party_trade_name,
+                "address1" => $order->billToAddress->address_line,
+                "address2" => '',
+                "location" => strtoupper($order->billToAddress->city),
+                "pincode" => $order->billToAddress->pincode,
+                "state_code" => strtoupper($order->billToAddress->state_code)
+            ];
+        }
+
+        $response = $this->masterIndiaService->generateEInvoice($params);
+
+        if ($response instanceof Response) {
+            //update psos for failure
+            $order->update(
+                [
+                    'irn_status' => 'E',
+                    'irn_status_message' => json_decode($response->getContent(), true)['message'] ?? ''
+                ]);
+            return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
+        }
+
+
+        $isRecordCreated = $this->masterIndiaEInvoiceTransaction->create([
+            'order_id' => $order->order_id,
+            'ack_no' => $response['message']['AckNo'],
+            'ack_date' => $response['message']['AckDt'],
+            'irn_no' => $response['message']['Irn'],
+            'qrcode_url' => $response['message']['QRCodeUrl'],
+            'einvoice_pdf_url' => $response['message']['EinvoicePdf'],
+            'status_received' => $response['message']['Status'],
+            'alert_message' => $response['message']['alert'],
+            'request_id' => $response['requestId'],
+            'invoice_status' => 'Created'
+        ]);
+
+        if ($isRecordCreated) {
+            $order->update([
+                'irn_status' => 'C',
+                'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? '')
+            ]);
+            return response()->json(['status' => true, 'message' => 'E-invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
+        }
+
+        return response()->json(['status' => false, 'message' => 'EInvoice created but failed to save response', 'data' => []]);
+    }
 }

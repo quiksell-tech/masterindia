@@ -14,7 +14,7 @@ class MasterIndiaEwayBillTransaction extends BaseModel
     protected $primaryKey = 'masterindia_ewaybill_transaction_id';
 
     protected $fillable = [
-        'sell_invoice_ref_no',
+        'order_id',
         'eway_bill_no',
         'eway_bill_date',
         'eway_bill_url',
