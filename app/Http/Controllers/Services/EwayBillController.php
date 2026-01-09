@@ -352,10 +352,16 @@ class EwayBillController extends Controller
           ])
           ->errors()
           ->toArray();
+         if(!$order->eway_bill_no)
+         {
+             return response()->json(['status'=>false,'message'=>'Ewaybill is not created','data'=>[]]);
+         }
 
-      if (count($errors)) {
-          return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-      }
+          if (count($errors)) {
+              //return json_response(422, 'Invalid or Missing parameters', compact('errors'));
+
+              return response()->json(['status'=>false,'message'=>'Invalid or Missing parameters','data'=>[]]);
+          }
 
         $params =[
 
@@ -368,11 +374,15 @@ class EwayBillController extends Controller
 
       $response= $this->masterIndiaService->cancelEwayBill($params);
 
+        if(!$this->ewayBillData->cancelEwayBill($this->ewayBillData, $params, $response))
+
+        return response()->json(['status'=>false,'message'=>'Eway Bill cancelled but failed to save response','data'=>[]]);
+
         $order->update([
             'eway_status' => 'X',
             'eway_status_message' => 'Ewaybill has been cancelled'
         ]);
-
+        return response()->json(['status'=>true,'message'=>'Ewaybill has been cancelled','data'=>[]]);
     }
 
     /**
@@ -431,7 +441,8 @@ class EwayBillController extends Controller
             ->toArray();
 
         if (count($errors)) {
-            return json_response(422, 'Invalid or Missing parameters', compact('errors'));
+           // return json_response(422, 'Invalid or Missing parameters', compact('errors'));
+            return response()->json(['status'=>false,'message'=>'Invalid or Missing parameters','data'=>[]]);
         }
         $order = MiOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -446,7 +457,10 @@ class EwayBillController extends Controller
             ->where('order_id', $order->order_id)
             ->first();
 
-
+        if(!$order->eway_bill_no)
+        {
+            return response()->json(['status'=>false,'message'=>'EwayBill is not created','data'=>[]]);
+        }
 
         if($request->action == 'update-vehicle'){
 

@@ -2,64 +2,102 @@
 
 namespace App\Services\EInvoice;
 
+use App\Models\SystemParameter;
 use App\Services\GuzzleService;
 use App\Traits\GetConfig;
 use App\Repositories\Interfaces\SystemParametersInterface;
+use Carbon\Carbon;
 
 class MasterIndiaService implements EinvoiceService
 {
-    use GetConfig;
 
     protected $cancellation_reasons = [
       "duplicate" => "1", //Duplicate
       "incorrect-details" => "2" //Data Entry Mistake
     ];
+    protected  $systemParameters;
 
-    public function __construct(GuzzleService $guzzleService, SystemParametersInterface $systemParameters){
-        $this->guzzleService = $guzzleService;
+    protected  $ACCESS_TOKEN = null;
+    protected  $AUTH_TIMESTAMP = null;
+    protected  $guzzleService;
+    public function __construct(GuzzleService $guzzleService, SystemParameter $systemParameters){
+
         $this->systemParameters = $systemParameters;
+        $this->guzzleService = $guzzleService;
+        // Load system parameters
         $this->getSystemParams(['MasterIndia']);
 
-        if(empty($this->AUTH_TIMESTAMP) || date('Y-m-d H:i:s') >= $this->AUTH_TIMESTAMP){
-            if(!app()->runningInConsole()) {
+        // Check token expiry
+        if (
+            empty($this->AUTH_TIMESTAMP) ||
+            Carbon::now()->gte(Carbon::parse($this->AUTH_TIMESTAMP))
+        ) {
+            if (!app()->runningInConsole()) {
+
                 $token = $this->authenticate();
+
                 if ($token) {
-                    $this->systemParameters->updateRecord([
-                        'sysprm_provider' => 'MasterIndia',
-                        'sysprm_name' => 'ACCESS_TOKEN'
-                    ],
+                    // Save new access token
+                    $this->systemParameters->updateRecord(
+                        [
+                            'sysprm_provider' => 'MasterIndia',
+                            'sysprm_name'     => 'ACCESS_TOKEN',
+                        ],
                         [
                             'sysprm_value' => $token,
-                        ]);
-                    $this->systemParameters->updateRecord([
-                        'sysprm_provider' => 'MasterIndia',
-                        'sysprm_name' => 'AUTH_TIMESTAMP'
-                    ],
+                        ]
+                    );
+
+                    // Save new expiry timestamp (50 mins)
+                    $this->systemParameters->updateRecord(
                         [
-                            'sysprm_value' => date('Y-m-d H:i:s', strtotime('+50 minutes')),
-                        ]);
+                            'sysprm_provider' => 'MasterIndia',
+                            'sysprm_name'     => 'AUTH_TIMESTAMP',
+                        ],
+                        [
+                            'sysprm_value' => Carbon::now()->addMinutes(50)->format('Y-m-d H:i:s'),
+                        ]
+                    );
                 }
-            }else{
-                $token = '<artisan command>';// ignore when running artisan command
+
+            } else {
+                // Ignore token when running artisan
+                $token = '<artisan command>';
             }
-        }else{
+
+        } else {
+            // Token still valid
             $token = $this->ACCESS_TOKEN;
         }
 
-        if(empty($token))
-        {
-            http_response_code(400);
-            echo json_encode([
-                'success'=>false,
-                'message'=>'Access Token Cannot Be Generated'
-            ]);
-            die;
+        if (empty($token)) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Access Token Cannot Be Generated'
+            ], 400));
         }
 
         $this->ACCESS_TOKEN = $token;
     }
 
+    /**
+     * Load system parameters into class properties
+     */
+    protected function getSystemParams(array $providers)
+    {
+        $params = $this->systemParameters->whereIn('sysprm_provider', $providers)
+            ->where('current_flag', 'Y')
+            ->get();
 
+        foreach ($params as $param) {
+            $this->{$param->sysprm_name} = $param->sysprm_value;
+        }
+    }
+
+    /**
+     * Authenticate with MasterIndia API
+     * MUST return access token string
+     */
     public function refreshToken(){
 
         $token =  $this->authenticate();
@@ -104,10 +142,10 @@ class MasterIndiaService implements EinvoiceService
 
         $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $data, [], 'MasterIndia', 'authorize' );
         if($result['error']===false){
-           $response = json_decode($result['data'], true);
-           if(!empty($response['access_token'])){
-              return $response['access_token'];
-           }
+            $response = json_decode($result['data'], true);
+            if(!empty($response['access_token'])){
+                return $response['access_token'];
+            }
         }
 
         return null;
@@ -121,200 +159,7 @@ class MasterIndiaService implements EinvoiceService
         $original_data = $data;
         $endpoint = $this->BASE_URL.'/generateEinvoice';
 
-        if($data['igst_flag'] == 'Y'){
-          $igst_total = $data['sell_invoice_gst_value'];
-          $sgst_total=0;
-          $cgst_total=0;
-        }else{
-          $igst_total = 0;
-          $sgst_total=$data['sell_invoice_gst_value']/2;
-          $cgst_total=$data['sell_invoice_gst_value']/2;
-        }
 
-        $items_list =[];
-        $i=1;
-        $total_assessable_value =0 ;
-        //$total_other_charges = 0;
-        foreach($data['items_list'] as $item){
-
-            $total_assessable_value += round($item['assessable_value'], 2);
-            //$total_other_charges += round($item['other_charge'],2);
-//test comment
-            $items_list[] = [
-                "item_serial_number" => $i++,
-                "product_description" => $item['product_name'],
-                "is_service" => (strtolower($item['inventory_source']) == 'service')?'Y':'N',
-                "hsn_code" => $item['product_hsn'],
-                "bar_code" => $item['product_barcode']??'',
-                "quantity" => $item['product_quantity'],
-                // "free_quantity" => 0,
-                "unit" => "PCS",
-                "unit_price" => round($item['unit_value'], 2),
-                "total_amount" => round($item['unit_value'] * $item['product_quantity'],2),
-                // "pre_tax_value" => 0,
-                "discount" => 0,
-                "other_charge" => round($item['other_charge'],2),
-                "assessable_value" => round($item['assessable_value'], 2),
-                "gst_rate" => $item['gst_rate'],
-                "igst_amount" => round($item['igst_value'],2),
-                "cgst_amount" => round($item['cgst_value'],2),
-                "sgst_amount" => round($item['sgst_value'],2),
-                // "cess_rate" => 0,
-                // "cess_amount" => 0,
-                // "cess_nonadvol_amount"=> 0,
-                // "state_cess_rate" => 0,
-                // "state_cess_amount" => 0,
-                // "state_cess_nonadvol_amount" => 0,
-                "total_item_value" => round($item['product_total_value'],2) ,
-                // "country_origin" => "",
-                // "order_line_reference" => "",
-                // "product_serial_number" => "",
-//            "batch_details" => [
-//              "name" => "aaa",
-//              // "expiry_date" => "31/10/2020",
-//              // "warranty_date" => "31/10/2020"
-//            ],
-                // "attribute_details" => [[
-                //   "item_attribute_details" => "aaa",
-                //   "item_attribute_value" => "147852"
-                // ]]
-            ];
-        }
-
-        $params =[
-          "access_token" =>$this->ACCESS_TOKEN,
-          "user_gstin" => $data['company_gstin'] ,
-          "data_source" => "erp",
-          "transaction_details"=> [
-            "supply_type" => "B2B",
-            "charge_type" => "N",
-            "igst_on_intra" => "N",
-            "ecommerce_gstin" => ""
-          ],
-          "document_details"=> [
-            "document_type" => "INV",
-            "document_number" => strtoupper($data['ext_invoice_ref_no']),
-            "document_date" => date('d/m/Y', strtotime($data['invoice_date']))
-          ],
-          "seller_details" => [
-            "gstin" => $data['company_gstin'],
-            "legal_name" => $data['company_name'],
-            // "trade_name" => "MastersIndia UP",
-            "address1" => $data['company_address_1'],
-            "address2" => $data['company_address_2'],
-            // "address2" => "Vila",
-            "location" => strtoupper($data['company_city']),
-            "pincode" => $data['company_pincode'],
-            "state_code" => strtoupper($data['company_state']),
-            "phone_number" => $data['company_mobile'],
-            // "email" => ""
-          ],
-          "buyer_details" => [
-            "gstin" => $data['buyer_gstin'],
-            "legal_name" => $data['party_legal_name'],
-            "trade_name" => $data['party_name'],
-            "address1" => $data['party_address_line_1'],
-            "address2" => $data['party_address_line_2']??'',
-            "location" => strtoupper($data['party_city']),
-            "pincode" => $data['party_pincode'],
-            "place_of_supply" => $data['party_state_code'],
-            "state_code"=> strtoupper($data['party_state']),
-            "phone_number" => $data['party_mobile'],
-            // "email" => ""
-          ],
-          "dispatch_details" => [
-            "company_name" => $data['company_name'],
-            "address1" => $data['company_address_1'],
-            "address2" => $data['company_address_2'],
-            // "address2" => "Vila",
-            "location" => strtoupper($data['company_city']),
-            "pincode" => $data['company_pincode'],
-            "state_code" => strtoupper($data['company_state'])
-          ],
-          "ship_details" => [
-            // "gstin" => "05AAAPG7885R002",
-            "legal_name" => $data['party_legal_name'],
-            "trade_name" => $data['party_name'],
-            "address1" => $data['ship_to_address_line_1'],
-             "address2" => $data['ship_to_address_line_2']??'',
-            "location" => strtoupper($data['ship_to_city']),
-            "pincode" => $data['ship_to_pincode'],
-            "state_code" => strtoupper($data['ship_to_state'])
-          ],
-          // "export_details" => [
-          //   "ship_bill_number" => "",
-          //   "ship_bill_date" => "12/09/2021",
-          //   "country_code" => "IN",
-          //   "foreign_currency" => "INR",
-          //   "refund_claim" => "N",
-          //   "port_code" => "",
-          //   "export_duty" => 2534.34
-          // ],
-          // "payment_details" => [
-          //   "bank_account_number" => "Account Details",
-          //   "paid_balance_amount" => 100,
-          //   "credit_days" => 2,
-          //   "credit_transfer" => "Credit Transfer",
-          //   "direct_debit" => "Direct Debit",
-          //   "branch_or_ifsc" => "KKK000180",
-          //   "payment_mode" => "CASH",
-          //   "payee_name" => "Payee Name",
-          //   "outstanding_amount" => 1.9,
-          //   "payment_instruction" => "Payment Instruction",
-          //   "payment_term" => "Terms of Payment"
-          // ],
-          "reference_details" => [
-            // "invoice_remarks" => "Invoice Remarks",
-//            "document_period_details" => [
-//              "invoice_period_start_date" => "2021-09-12",
-//              "invoice_period_end_date" => "2021-11-12"
-//            ],
-            "preceding_document_details" => [[
-              "reference_of_original_invoice" => strtoupper($data['ext_invoice_ref_no']),
-              "preceding_invoice_date" => date('d/m/Y', strtotime($data['invoice_date'])),
-              // "other_reference" => "2334"
-            ]],
-            // "contract_details"=> [[
-            //   "receipt_advice_number" => "aaa",
-            //   "receipt_advice_date" => "15/12/2021",
-            //   "batch_reference_number" => "2334",
-            //   "contract_reference_number" => "2334",
-            //   "other_reference" => "2334",
-            //   "project_reference_number" => "2334",
-            //   "vendor_po_reference_number" => "233433454545",
-            //   "vendor_po_reference_date" => "15/12/2021"
-            // ]]
-          ],
-          // "additional_document_details" => [[
-          //   "supporting_document_url" => "asafsd",
-          //   "supporting_document" => "india",
-          //   "additional_information" => "india"
-          // ]],
-          "value_details" => [
-            "total_assessable_value" => round($total_assessable_value,2),
-            "total_cgst_value" => round($cgst_total,2),
-            "total_sgst_value" => round($sgst_total,2),
-            "total_igst_value" => round($igst_total,2),
-            // "total_cess_value" => 0,
-            // "total_cess_value_of_state" => 0,
-            //"total_discount" => 0,
-            //"total_other_charge" => round($total_other_charges, 2),
-            "total_invoice_value" => round($data['sell_invoice_total_value'],2),
-            // "round_off_amount" => 0,
-            // "total_invoice_value_additional_currency" => 0
-          ],
-          // "ewaybill_details" => [
-          //   "transporter_id" => "05AAABB0639G1Z8",
-          //   "transporter_name" => "Jay Trans",
-          //   "transportation_mode" => "1",
-          //   "transportation_distance" => "0",
-          //   "transporter_document_number" => "1230",
-          //   "transporter_document_date" => "12/12/2021",
-          //   "vehicle_number" => "PQR1234",
-          //   "vehicle_type" => "R"
-          // ],
-          "item_list" => $items_list
-        ];
 
         $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_e_inv', $data['sell_invoice_ref_no'] );
         if($result['error']===false){

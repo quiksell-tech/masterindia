@@ -243,9 +243,10 @@
 
         <tr>
             <td>-</td>
+
+            <td>{{ number_format($order->total_tax/2, 2) }}</td>
+            <td>{{ number_format($order->total_tax/2, 2) }}</td>
             <td>0</td>
-            <td>{{ number_format($order->total_tax/2, 2) }}</td>
-            <td>{{ number_format($order->total_tax/2, 2) }}</td>
             <td>{{ number_format($order->total_tax, 2) }}</td>
         </tr>
     @else

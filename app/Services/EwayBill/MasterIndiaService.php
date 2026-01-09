@@ -29,15 +29,15 @@ class MasterIndiaService
         'others' => 'Others',
         'first-time' => 'First Time'
     ];
-    protected SystemParameter $systemParameters;
+    protected  $systemParameters;
 
-    protected ?string $ACCESS_TOKEN = null;
-    protected ?string $AUTH_TIMESTAMP = null;
+    protected  $ACCESS_TOKEN = null;
+    protected  $AUTH_TIMESTAMP = null;
     protected  $guzzleService;
 
-    public function __construct(GuzzleService $guzzleService)
+    public function __construct(GuzzleService $guzzleService, SystemParameter $systemParameters)
     {
-        $this->systemParameters = new SystemParameter();
+        $this->systemParameters = $systemParameters;
         $this->guzzleService = $guzzleService;
         // Load system parameters
         $this->getSystemParams(['MasterIndia']);
@@ -100,7 +100,7 @@ class MasterIndiaService
      */
     protected function getSystemParams(array $providers)
     {
-        $params = SystemParameter::whereIn('sysprm_provider', $providers)
+        $params = $this->systemParameters->whereIn('sysprm_provider', $providers)
             ->where('current_flag', 'Y')
             ->get();
 
