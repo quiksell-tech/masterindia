@@ -38,8 +38,8 @@ class EInvoiceController extends Controller
             "gstin" => $this->company_gstn,
             "irn" => $order->irn_no,
         ];
-
-        $response = $this->masterIndiaService->getEInvoice($params);
+        $data=['order_invoice_number'=>$order->order_invoice_number];
+        $response = $this->masterIndiaService->getEInvoice($data,$params);
     }
 
     public function generateCreditNote(Request $request, MiOrder $miOrder)
@@ -277,9 +277,9 @@ class EInvoiceController extends Controller
                 "state_code" => strtoupper($order->billToAddress->state_code)
             ];
         }
+        $data=['order_invoice_number'=>$order->order_invoice_number];
 
-
-        $response = $this->masterIndiaService->generateCreditNote($params);
+        $response = $this->masterIndiaService->generateCreditNote($data,$params);
 
     }
 
@@ -294,8 +294,8 @@ class EInvoiceController extends Controller
             "cancel_reason" => $request->cancellation_reasons,
             "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
         ];
-
-        $response = $this->masterIndiaService->cancelEInvoice($params);
+        $data=['order_invoice_number'=>$order->order_invoice_number];
+        $response = $this->masterIndiaService->cancelEInvoice($data,$params);
 
         $isUpdated = $this->masterIndiaEInvoiceTransaction->update(['order_id' => $order->order_id], [
             'invoice_status' => 'Cancelled',
@@ -552,8 +552,8 @@ class EInvoiceController extends Controller
                 "state_code" => strtoupper($order->billToAddress->state_code)
             ];
         }
-
-        $response = $this->masterIndiaService->generateEInvoice($params);
+        $data=['order_invoice_number'=>$order->order_invoice_number];
+        $response = $this->masterIndiaService->generateEInvoice($data,$params);
 
         if ($response instanceof Response) {
             //update psos for failure

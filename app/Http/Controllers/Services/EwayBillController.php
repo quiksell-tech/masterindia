@@ -16,7 +16,27 @@ class EwayBillController extends Controller
     protected $masterIndiaService;
     protected $masterIndiaEwayBillTransaction;
     protected $company_gstn = '06AAICR4029F1ZI';
+    protected $cancellation_reasons = [
+        'duplicate' => 'Duplicate',
+        'order-cancelled' => 'Order Cancelled',
+        'incorrect-details' => 'Data Entry mistake',
+        'others' => 'Others'
+    ];
 
+    protected $extension_reasons = [
+        'natural-calamity' => 'Natural Calamity',
+        'law-order' => 'Law and Order Situation',
+        'transshipment' => 'Transshipment',
+        'accident' => 'Accident',
+        'others' => 'Others'
+    ];
+
+    protected $vehicle_update_reason = [
+        'break-down' => 'Due to Break Down',
+        'transshipment' => 'Due to Transhipment',
+        'others' => 'Others',
+        'first-time' => 'First Time'
+    ];
     public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEwayBillTransaction $masterIndiaEwayBillTransaction)
     {
 
@@ -255,8 +275,8 @@ class EwayBillController extends Controller
                 $ewayBillData['transporter_id'] = $order->transporter_id;// GSTN of transporter
 
             }
-
-            $response = $this->masterIndiaService->generateEwayBill($ewayBillData);
+            $data=['order_invoice_number'=>$order->order_invoice_number];
+            $response = $this->masterIndiaService->generateEwayBill($data,$ewayBillData);
             if ($response instanceof Response) {
                 // update psos for error
 
@@ -373,8 +393,8 @@ class EwayBillController extends Controller
             "cancel_remark" => $request->cancel_remarks ?? '',
             "data_source" => "erp"
         ];
-
-        $response = $this->masterIndiaService->cancelEwayBill($params);
+        $data=['order_invoice_number'=>$order->order_invoice_number];
+        $response = $this->masterIndiaService->cancelEwayBill($data,$params);
 
         $isRecordUpdated = $this->masterIndiaEwayBillTransaction->update(
 
@@ -491,8 +511,9 @@ class EwayBillController extends Controller
                 "mode_of_transport" => $request->transportation_mode,
                 "data_source" => "erp"
             ];
+            $data=['order_invoice_number' => $order->order_invoice_number];
 
-            $response = $this->masterIndiaService->updateVehicleNumber($params);
+            $response = $this->masterIndiaService->updateVehicleNumber($data,$params);
             $this->masterIndiaEwayBillTransaction->update(
 
                 ['order_id' => $order->order_id],
@@ -510,7 +531,10 @@ class EwayBillController extends Controller
                 "eway_bill_number" => $order->eway_bill_no,
                 "transporter_id" => $order->transporter_id // GSTN of transporter
             ];
-            $response = $this->masterIndiaService->updateTransporterID($params);
+            $data=['order_invoice_number' => $order->order_invoice_number];
+
+            $response = $this->masterIndiaService->updateTransporterID($data,$params);
+
             $this->masterIndiaEwayBillTransaction->update(
 
                 ['order_id' => $order->order_id],
@@ -522,7 +546,6 @@ class EwayBillController extends Controller
         } else if ($request->action == 'extend-validity') {
 
             $params = [
-
                 "userGstin" => $this->company_gstn,
                 "eway_bill_number" => $order->eway_bill_no,
                 "place_of_consignor" => strtoupper($order->billFromParty->city),
@@ -540,6 +563,7 @@ class EwayBillController extends Controller
                 // "address_line2" => "Dehradun", // not required for consignment status M
                 // "address_line3" => "Dehradun" // not required for consignment status M
             ];
+            $data=['order_invoice_number' => $order->order_invoice_number];
             if ($order->transporter_name == 'SELF') {
                 $params["vehicle_number"] = $order->vehicle_no; // $data['transporter_vehicle_number']; //to be discussed
                 $params["mode_of_transport"] = $order->transportation_mode;
@@ -550,7 +574,7 @@ class EwayBillController extends Controller
             }
 
 
-            $response = $this->masterIndiaService->extendBillValidity($params);
+            $response = $this->masterIndiaService->extendBillValidity($data,$params);
 
             $this->masterIndiaEwayBillTransaction->update(
 
@@ -690,15 +714,16 @@ class EwayBillController extends Controller
         if($order->isEmpty()){
             return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
         }
-
+        $data=['order_invoice_number' => $order->order_invoice_number];
         $params = [
-            'action' => 'GetEwayBill',
 
+            'action' => 'GetEwayBill',
             "gstin" => $this->company_gstn,
             'eway_bill_number' => $order->eway_bill_no,
+            'order_invoice_number' => $order->order_invoice_number,
         ];
 
-        return $this->masterIndiaService->getEwayBillDetails($params);
+        return $this->masterIndiaService->getEwayBillDetails($data,$params);
     }
 
 

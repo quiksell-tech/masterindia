@@ -8,27 +8,7 @@ use Carbon\Carbon;
 
 class MasterIndiaService
 {
-    protected $cancellation_reasons = [
-        'duplicate' => 'Duplicate',
-        'order-cancelled' => 'Order Cancelled',
-        'incorrect-details' => 'Data Entry mistake',
-        'others' => 'Others'
-    ];
 
-    protected $extension_reasons = [
-        'natural-calamity' => 'Natural Calamity',
-        'law-order' => 'Law and Order Situation',
-        'transshipment' => 'Transshipment',
-        'accident' => 'Accident',
-        'others' => 'Others'
-    ];
-
-    protected $vehicle_update_reason = [
-        'break-down' => 'Due to Break Down',
-        'transshipment' => 'Due to Transhipment',
-        'others' => 'Others',
-        'first-time' => 'First Time'
-    ];
     protected $systemParameters;
 
     protected $ACCESS_TOKEN = null;
@@ -168,10 +148,11 @@ class MasterIndiaService
 
     }
 
-    public function generateEwayBill($parameters)
+    public function generateEwayBill($data,$parameters)
     {
         $endpoint = $this->BASE_URL . '/ewayBillsGenerate';
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $parameters, [], 'MasterIndia', 'gen_e_bill', $parameters['document_number']);
+        $parameters['access_token'] = $this->ACCESS_TOKEN;
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $parameters, [], 'MasterIndia', 'gen_e_bill', $data['order_invoice_number']);
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
             if (isset($response['results']['status']) && strtolower($response['results']['status']) == 'success') {
@@ -182,27 +163,18 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->generateEwayBill($parameters);
+            return $this->generateEwayBill($data,$parameters);
         }
 
         return json_response(400, ($response['results']['message'] ?? $result['message']) . ' ' . ($response['results']['code'] ?? ''));
     }
 
-    public function cancelEwayBill($data)
+    public function cancelEwayBill($data,$params)
     {
-        $original_data = $data;
+        $original_data = $params;
         $endpoint = $this->BASE_URL . '/ewayBillCancel';
-
-        $params = [
-            "access_token" => $this->ACCESS_TOKEN,
-            "userGstin" => $data['company_gstin'],
-            "eway_bill_number" => $data['eway_bill_no'],
-            "reason_of_cancel" => $this->cancellation_reasons[$data['cancel_reason']] ?? 'Others',
-            "cancel_remark" => $data['cancel_remarks'] ?? '',
-            "data_source" => "erp"
-        ];
-
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_bill', $data['sell_invoice_ref_no']);
+        $params['access_token'] = $this->ACCESS_TOKEN;
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_bill', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -213,35 +185,20 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->cancelEwayBill($original_data);
+            return $this->cancelEwayBill($data,$original_data);
         }
 
         return json_response(400, ($response['results']['message'] ?? $result['message']) . ' ' . ($response['results']['code'] ?? ''));
 
     }
 
-    public function updateVehicleNumber($data)
+    public function updateVehicleNumber($data,$params)
     {
-        $original_data = $data;
+        $original_data = $params;
         $endpoint = $this->BASE_URL . '/updateVehicleNumber';
+        $params['access_token'] = $this->ACCESS_TOKEN;
 
-        $params = [
-            "access_token" => $this->ACCESS_TOKEN,
-            "userGstin" => $data['company_gstin'],
-            "eway_bill_number" => $data['eway_bill_no'],
-            "vehicle_number" => $data['transporter_vehicle_number'],
-            "vehicle_type" => "Regular",
-            "place_of_consignor" => strtoupper($data['company_city']),
-            "state_of_consignor" => strtoupper($data['company_state']),
-            "reason_code_for_vehicle_updation" => $this->vehicle_update_reason[$data['vehicle_update_reason']] ?? 'Others',
-            "reason_for_vehicle_updation" => $data['vehicle_update_remarks'],
-            // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
-            // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
-            "mode_of_transport" => "road",
-            "data_source" => "erp"
-        ];
-
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_vcle', $data['sell_invoice_ref_no']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_vcle', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -252,7 +209,7 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->updateVehicleNumber($original_data);
+            return $this->updateVehicleNumber($data,$original_data);
         }
 
         return json_response(400, ($response['results']['message'] ?? $result['message']) . ' ' . ($response['results']['code'] ?? ''));
@@ -260,22 +217,13 @@ class MasterIndiaService
     }
 
 
-    public function updateTransporterID($data)
+    public function updateTransporterID($data,$params)
     {
-        $original_data = $data;
+        $original_data = $params;
         $endpoint = $this->BASE_URL . '/transporterIdUpdate';
+        $params['access_token'] = $this->ACCESS_TOKEN;
 
-        $transporter = $this->systemParameters->getTransporter($data['tracking_partner_name'] ?? '');
-        $transporter_id = $transporter->transporter_id ?? '';
-
-        $params = [
-            "access_token" => $this->ACCESS_TOKEN,
-            "userGstin" => $data['company_gstin'],
-            "eway_bill_number" => $data['eway_bill_no'],
-            "transporter_id" => $transporter_id
-        ];
-
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_trans', $data['sell_invoice_ref_no']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_trans', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -286,7 +234,7 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->updateTransporterID($original_data);
+            return $this->updateTransporterID($data,$original_data);
         }
 
         return json_response(400, ($response['results']['message'] ?? $result['message']) . ' ' . ($response['results']['code'] ?? ''));
@@ -294,9 +242,9 @@ class MasterIndiaService
 
     }
 
-    public function extendBillValidity($data)
+    public function extendBillValidity($data,$params)
     {
-        $original_data = $data;
+        $original_data = $params;
         $endpoint = $this->BASE_URL . '/ewayBillValidityExtend';
 
         $params = [
@@ -338,19 +286,19 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->extendBillValidity($original_data);
+            return $this->extendBillValidity($data,$original_data);
         }
 
         return json_response(400, ($response['results']['message'] ?? $result['message']) . ' ' . ($response['results']['code'] ?? ''));
     }
 
-    public function getEwayBillDetails($params)
+    public function getEwayBillDetails($data,$params)
     {
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/getEwayBillData';
         $params['access_token'] = $this->ACCESS_TOKEN;
 
-        $result = $this->guzzleService->request($endpoint, 'GET', 'json', $params, [], [], 'MasterIndia', 'get_ebill_det', $data['sell_invoice_ref_no']);
+        $result = $this->guzzleService->request($endpoint, 'GET', 'json', $params, [], [], 'MasterIndia', 'get_ebill_det', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -361,7 +309,7 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->getEwayBillDetails($original_data);
+            return $this->getEwayBillDetails($data,$original_data);
         }
 
         return json_response(400, ($response['results']['message'] ?? $result['message']) . ' ' . ($response['results']['code'] ?? ''));

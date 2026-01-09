@@ -156,14 +156,14 @@ class MasterIndiaService
     /*
      * Function to generate einvoice
      */
-    public function generateEInvoice($params)
+    public function generateEInvoice($data,$params)
     {
 
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/generateEinvoice';
         $params['access_token'] = $this->ACCESS_TOKEN;
 
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_e_inv', $params['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_e_inv', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -177,7 +177,7 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->generateEInvoice($original_data);
+            return $this->generateEInvoice($data,$original_data);
         }
 
         return json_response(400, $response['results']['errorMessage'] ?? $result['message']);
@@ -187,14 +187,14 @@ class MasterIndiaService
     /*
      * Function to generate credit note
      */
-    public function generateCreditNote($params)
+    public function generateCreditNote($data,$params)
     {
 
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/generateEinvoice';
         $params['access_token'] = $this->ACCESS_TOKEN;
 
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_cr_note', $params['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_cr_note', $data['order_invoice_number']);
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
             if (isset($response['results']['status']) && strtolower($response['results']['status']) == 'success') {
@@ -207,20 +207,20 @@ class MasterIndiaService
 
         if ((isset($result['header_status']) && $result['header_status'] == 401) || json_decode($result['data'], true)['results']['message'] ?? '' == 'The access token provided is invalid.') {
             $this->refreshToken();
-            return $this->generateCreditNote($original_data);
+            return $this->generateCreditNote($data,$original_data);
         }
 
         return json_response(400, $response['results']['errorMessage'] ?? $result['message']);
 
     }
 
-    public function cancelEInvoice($params)
+    public function cancelEInvoice($data,$params)
     {
 
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/cancelEinvoice';
         $params['access_token'] = $this->ACCESS_TOKEN;
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_inv', $params['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_inv', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -231,7 +231,7 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->cancelEInvoice($original_data);
+            return $this->cancelEInvoice($data,$original_data);
         }
 
         return json_response(400, $response['results']['errorMessage'] ?? $result['message']);
@@ -239,14 +239,14 @@ class MasterIndiaService
 
     }
 
-    public function getEInvoice($params)
+    public function getEInvoice($data,$params)
     {
 
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/getEinvoiceData';
         $params['access_token'] = $this->ACCESS_TOKEN;
 
-        $result = $this->guzzleService->request($endpoint, 'GET', '', $params, [], [], 'MasterIndia', 'get_e_inv', $params['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'GET', '', $params, [], [], 'MasterIndia', 'get_e_inv', $data['order_invoice_number']);
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
             if (isset($response['results']['status']) && strtolower($response['results']['status']) == 'success') {
@@ -256,7 +256,7 @@ class MasterIndiaService
 
         if (isset($result['header_status']) && $result['header_status'] == 401) {
             $this->refreshToken();
-            return $this->getEInvoice($original_data);
+            return $this->getEInvoice($data,$original_data);
         }
 
         return json_response(400, $response['results']['errorMessage'] ?? $result['message']);
