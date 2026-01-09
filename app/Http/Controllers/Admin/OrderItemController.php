@@ -49,7 +49,7 @@ class OrderItemController extends Controller
                     'item_id'             => $item['item_id'],
                     'total_item_quantity' => $item['total_item_quantity'] ?? 0,
                     'item_unit'           => $item['item_unit'] ?? null,
-                    'price_per_unit'      => $item['tax_per_unit'] ?? 0,
+                    'price_per_unit'      => $item['price_per_unit'] ?? 0,
                     'after_tax_value'     => $item['after_tax_value'] ?? 0,
                     'taxable_amount'      => $item['taxable_amount'] ?? 0,
                     'item_name'           => $itemData->item_name ,

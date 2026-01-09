@@ -16,14 +16,14 @@
 
 <div class="header">
     <div class="title">TAX INVOICE</div>
-    <small>(Customer Copy)</small>
+{{--    <small>(Customer Copy)</small>--}}
 </div>
 
 <hr>
 <table width="100%" cellspacing="0" cellpadding="6" style="font-size:14px;">
     <tr>
         <!-- Company Details -->
-        <td width="50%" valign="top">
+        <td width="45%" valign="top">
             <strong style="font-size:16px;">
                 {{ config('company.name') }}
             </strong><br>
@@ -39,7 +39,7 @@
         </td>
 
         <!-- Invoice & Transport Details -->
-        <td width="50%" valign="top">
+        <td width="55%" valign="top">
             <table width="100%" cellspacing="0" cellpadding="4">
                 <tr>
                     <td width="45%" align="right">
@@ -78,7 +78,7 @@
                 </tr>
 
                 <tr>
-                    <td align="left">
+                    <td align="right" style="font-size: 12px">
                         <strong>Transport Doc No:</strong>
                     </td>
                     <td align="left">
@@ -87,11 +87,19 @@
                 </tr>
 
                 <tr>
-                    <td align="right">
-                        <strong>Transport Date:</strong>
+                    <td align="right" style="font-size: 12px">
+                        <strong>Transport Doc. Date:</strong>
                     </td>
                     <td align="left">
                         {{ \Carbon\Carbon::parse($order->transportation_date)->format('d-M-Y') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" style="font-size: 12px">
+                        <strong>Eway No:</strong>
+                    </td>
+                    <td align="left">
+                        {{ $order->eway_bill_no ?? '' }}
                     </td>
                 </tr>
             </table>
@@ -152,9 +160,12 @@
 
         </td>
     </tr>
-    <tr>
-        <td><span class="text-center" ><strong>Dispatch From:</strong></span><br>
+
+
         @if(!empty($order->dispatchFromParty->dispatch_from_party_id))
+        <tr>
+            <td>
+                <span class="text-center" ><strong>Dispatch From:</strong></span><br>
                 <strong>Name:</strong> {{ $order->dispatchFromParty->party_trade_name }}<br>
 {{--                <strong>Mobile:</strong> {{ $order->dispatchFromParty->phone }}<br>--}}
 {{--                <strong>Email:</strong> {{ $order->dispatchFromParty->email }}<br>--}}
@@ -166,7 +177,10 @@
                 {{ $order->dispatchFromAddress->state }} - {{ $order->dispatchFromAddress->pincode }}<br>
                 <strong>Place of Supply:</strong> {{ $order->dispatchFromAddress->state }}<br>
                 <strong>Place of Supply:</strong> {{ $order->dispatchFromAddress->state_code }}
+            </td>
+        </tr>
             @else
+{{--            <td><span class="text-center" ><strong>Dispatch From:</strong></span><br>--}}
 {{--                <strong>Name:</strong> {{ $order->billFromParty->party_trade_name }}<br>--}}
 {{--                <strong>Mobile:</strong> {{ $order->billFromParty->phone }}<br>--}}
 {{--                <strong>Email:</strong> {{ $order->billFromParty->email }}<br>--}}
@@ -178,10 +192,12 @@
 {{--                {{ $order->billFromAddress->state }} - {{ $order->billFromAddress->pincode }}<br>--}}
 {{--                <strong>Place of Supply:</strong> {{ $order->billFromAddress->state }}<br>--}}
 {{--                <strong>Place of Supply:</strong> {{ $order->billFromAddress->state_code }}--}}
+{{--            </td>--}}
+{{--        </tr>--}}
         @endif
-        </td>
-        <td></td>
-    </tr>
+
+
+
 </table>
 
 <br>
@@ -191,7 +207,7 @@
     <tr>
         <th>S.No</th>
         <th>HSN</th>
-        <th>ItmCode</th>
+        <th>ItemCode</th>
         <th>Name</th>
         <th>Description</th>
         <th>Qty</th>

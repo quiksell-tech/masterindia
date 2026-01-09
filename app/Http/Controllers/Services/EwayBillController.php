@@ -105,7 +105,7 @@ class EwayBillController extends Controller
                     $valid = $this->masterIndiaService->getGSTINDetails([
                         'buyer_gstin' =>$order->billFromParty->party_gstn,
                         'sell_invoice_ref_no' => $this->company_gstn,
-                        'company_gstin'=> '',
+                        'company_gstin'=> $this->company_gstn,
                     ]);
                 }
 
@@ -136,7 +136,7 @@ class EwayBillController extends Controller
 
             foreach($items as $item){
                 // In same state
-                if($order->billFromAddress->state_code == $order->billFromAddress->state_code){
+                if($order->billFromAddress->state_code == $order->billToParty->state_code){
 
                     $igst_rate = 0;
                     $sgst_rate = $item->tax_percentage/2;

@@ -155,13 +155,13 @@ class MasterIndiaService implements EinvoiceService
     /*
      * Function to generate einvoice
      */
-    public function generateEInvoice($data){
-        $original_data = $data;
+    public function generateEInvoice($params){
+        $original_data = $params;
         $endpoint = $this->BASE_URL.'/generateEinvoice';
+        $params['access_token']=$this->ACCESS_TOKEN;
 
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_e_inv', $params['order_invoice_number'] );
 
-
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_e_inv', $data['sell_invoice_ref_no'] );
         if($result['error']===false){
            $response = json_decode($result['data'], true);
            if(isset($response['results']['status']) && strtolower($response['results']['status']) == 'success'){
@@ -184,128 +184,12 @@ class MasterIndiaService implements EinvoiceService
     /*
      * Function to generate credit note
      */
-    public function generateCreditNote($data){
-        $original_data = $data;
+    public function generateCreditNote($params){
+        $original_data = $params;
         $endpoint = $this->BASE_URL.'/generateEinvoice';
+        $params['access_token']=$this->ACCESS_TOKEN;
 
-        if($data['igst_flag'] == 'Y'){
-            $igst_total = $data['sell_invoice_gst_value'];
-            $sgst_total=0;
-            $cgst_total=0;
-        }else{
-            $igst_total = 0;
-            $sgst_total=$data['sell_invoice_gst_value']/2;
-            $cgst_total=$data['sell_invoice_gst_value']/2;
-        }
-
-        $items_list =[];
-        $i=1;
-        $total_assessable_value =0;
-        $total_invoice_value = 0;
-        foreach($data['items_list'] as $item){
-
-            $total_assessable_value += round($item['assessable_value'], 2);
-            $total_invoice_value += round($item['product_total_value'],2);
-            $items_list[] = [
-                "item_serial_number" => $i++,
-                "product_description" => $item['product_name'],
-                "is_service" => (strtolower($item['inventory_source']) == 'service')?'Y':'N',
-                "hsn_code" => $item['product_hsn'],
-                "bar_code" => $item['product_barcode']??'',
-                "quantity" => $item['product_quantity'],
-                "unit" => "PCS",
-                "unit_price" => round($item['unit_value'], 2),
-                "total_amount" => round($item['unit_value'] * $item['product_quantity'],2),
-                "discount" => 0,
-                "other_charge" => round($item['other_charge'],2),
-                "assessable_value" => round($item['assessable_value'], 2),
-                "gst_rate" => $item['gst_rate'],
-                "igst_amount" => round($item['igst_value'],2),
-                "cgst_amount" => round($item['cgst_value'],2),
-                "sgst_amount" => round($item['sgst_value'],2),
-                "total_item_value" => round($item['product_total_value'],2) ,
-            ];
-        }
-
-        $params =[
-            "access_token" =>$this->ACCESS_TOKEN,
-            "user_gstin" => $data['company_gstin'] ,
-            "data_source" => "erp",
-            "transaction_details"=> [
-                "supply_type" => "B2B",
-                "charge_type" => "N",
-                "igst_on_intra" => "N",
-                "ecommerce_gstin" => ""
-            ],
-            "document_details"=> [
-                "document_type" => "CRN",
-                "document_number" => strtoupper($data['credit_note_ref_no']),
-                "document_date" => date('d/m/Y', strtotime($data['credit_note_date']))
-            ],
-            "seller_details" => [
-                "gstin" => $data['company_gstin'],
-                "legal_name" => $data['company_name'],
-                // "trade_name" => "MastersIndia UP",
-                "address1" => $data['company_address_1'],
-                "address2" => $data['company_address_2'],
-                // "address2" => "Vila",
-                "location" => strtoupper($data['company_city']),
-                "pincode" => $data['company_pincode'],
-                "state_code" => strtoupper($data['company_state']),
-                "phone_number" => $data['company_mobile'],
-                // "email" => ""
-            ],
-            "buyer_details" => [
-                "gstin" => $data['buyer_gstin'],
-                "legal_name" => $data['party_legal_name'],
-                "trade_name" => $data['party_name'],
-                "address1" => $data['party_address_line_1'],
-                "address2" => $data['party_address_line_2']??'',
-                "location" => strtoupper($data['party_city']),
-                "pincode" => $data['party_pincode'],
-                "place_of_supply" => $data['party_state_code'],
-                "state_code"=> strtoupper($data['party_state']),
-                "phone_number" => $data['party_mobile'],
-                // "email" => ""
-            ],
-            "dispatch_details" => [
-                "company_name" => $data['company_name'],
-                "address1" => $data['company_address_1'],
-                "address2" => $data['company_address_2'],
-                // "address2" => "Vila",
-                "location" => strtoupper($data['company_city']),
-                "pincode" => $data['company_pincode'],
-                "state_code" => strtoupper($data['company_state'])
-            ],
-            "ship_details" => [
-                // "gstin" => "05AAAPG7885R002",
-                "legal_name" => $data['party_legal_name'],
-                "trade_name" => $data['party_name'],
-                "address1" => $data['ship_to_address_line_1'],
-                "address2" => $data['ship_to_address_line_2']??'',
-                "location" => strtoupper($data['ship_to_city']),
-                "pincode" => $data['ship_to_pincode'],
-                "state_code" => strtoupper($data['ship_to_state'])
-            ],
-
-            "reference_details" => [
-                "preceding_document_details" => [[
-                    "reference_of_original_invoice" => strtoupper($data['ext_invoice_ref_no']),
-                    "preceding_invoice_date" => date('d/m/Y', strtotime($data['invoice_date'])),
-                    // "other_reference" => "2334"
-                ]],
-            ],
-            "value_details" => [
-                "total_assessable_value" => round($total_assessable_value,2),
-                "total_cgst_value" => round($cgst_total,2),
-                "total_sgst_value" => round($sgst_total,2),
-                "total_igst_value" => round($igst_total,2),
-                "total_invoice_value" => round($total_invoice_value,2),
-            ],
-            "item_list" => $items_list
-        ];
-
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_cr_note', $data['sell_invoice_ref_no'] );
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_cr_note', $params['order_invoice_number'] );
         if($result['error']===false){
             $response = json_decode($result['data'], true);
             if(isset($response['results']['status']) && strtolower($response['results']['status']) == 'success'){
@@ -325,19 +209,12 @@ class MasterIndiaService implements EinvoiceService
 
     }
 
-    public function cancelEInvoice($data){
-        $original_data = $data;
+    public function cancelEInvoice($params){
+        $original_data = $params;
         $endpoint = $this->BASE_URL.'/cancelEinvoice';
+        $params['access_token']=$this->ACCESS_TOKEN;
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_inv', $params['order_invoice_number'] );
 
-        $params =[
-          "access_token" =>$this->ACCESS_TOKEN,
-          "user_gstin" => $data['company_gstin'],
-          "irn" => $data['irn_no'],
-          "cancel_reason" => $this->cancellation_reasons[$data['cancel_reason']??'']??"2",
-          "cancel_remarks" => $data['cancel_remarks']??'Wrong Entry'
-        ];
-
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_inv', $data['sell_invoice_ref_no'] );
         if($result['error']===false){
            $response = json_decode($result['data'], true);
            if(isset($response['results']['status']) && strtolower($response['results']['status']) == 'success'){
@@ -355,17 +232,13 @@ class MasterIndiaService implements EinvoiceService
 
     }
 
-    public function getEInvoice($data){
-        $original_data = $data;
-      $endpoint = $this->BASE_URL.'/getEinvoiceData';
+    public function getEInvoice($params){
 
-      $params =[
-        "access_token" =>$this->ACCESS_TOKEN,
-        "gstin" => $data['company_gstin'],
-        "irn" => $data['irn_no'],
-      ];
+        $original_data = $params;
+        $endpoint = $this->BASE_URL.'/getEinvoiceData';
+        $params['access_token']=$this->ACCESS_TOKEN;
 
-      $result = $this->guzzleService->request($endpoint, 'GET', '', $params, [], [], 'MasterIndia', 'get_e_inv',$data['sell_invoice_ref_no'] );
+      $result = $this->guzzleService->request($endpoint, 'GET', '', $params, [], [], 'MasterIndia', 'get_e_inv',$params['order_invoice_number'] );
       if($result['error']===false){
          $response = json_decode($result['data'], true);
          if(isset($response['results']['status']) && strtolower($response['results']['status']) == 'success'){

@@ -393,7 +393,7 @@
                         </td>
 
                         <td>
-                            <input name="items[{{ $i }}][tax_per_unit]"
+                            <input name="items[{{ $i }}][price_per_unit]"
                                    class="form-control rate"
                                    type="number" step="any"
                                    value="{{ $item->price_per_unit }}">
@@ -713,7 +713,7 @@
             </td>
 
             <td>
-                <input name="items[${rowIndex}][tax_per_unit]"
+                <input name="items[${rowIndex}][price_per_unit]"
                        class="form-control rate" type="number" step="any">
             </td>
 
