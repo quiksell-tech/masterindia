@@ -78,7 +78,7 @@
                 </tr>
 
                 <tr>
-                    <td align="right">
+                    <td align="left">
                         <strong>Transport Doc No:</strong>
                     </td>
                     <td align="left">
