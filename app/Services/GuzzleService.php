@@ -82,7 +82,7 @@ class GuzzleService
 
             if(!empty($service) && !empty($action) && config('constants.ENABLE_API_LOGS') == true){
 
-                $log = $this->apiLog->createRecord([
+                $log = $this->apiLog->create([
                     'service'=>$service,
                     'api_action'=>$action,
                     'end_point'=>$url,
@@ -125,7 +125,7 @@ class GuzzleService
             $data = $response->getBody()->getContents();
 
             if(!empty($service) && !empty($action) && config('constants.ENABLE_API_LOGS') == true){
-                $log = $this->apiLog->createRecord([
+                $log = $this->apiLog->create([
                     'service'=>$service,
                     'api_action'=>$action,
                     'end_point'=>$url,
@@ -154,7 +154,7 @@ class GuzzleService
 
             if(!empty($service) && !empty($action) && config('constants.ENABLE_API_LOGS') == true){
 
-                $log = $this->apiLog->createRecord([
+                $log = $this->apiLog->create([
                     'service'=>$service,
                     'api_action'=>$action,
                     'end_point'=>$url,
@@ -177,7 +177,7 @@ class GuzzleService
         }catch(TransferException $e){
             // other network error
             if(!empty($service) && !empty($action) && config('constants.ENABLE_API_LOGS') == true){
-              $log = $this->apiLog->createRecord([
+              $log = $this->apiLog->create([
                   'service'=>$service,
                   'api_action'=>$action,
                   'end_point'=>$url,

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ApiLog extends Model
 {
-    use HasFactory;
+
 
     protected $table = 'api_logs';
 
@@ -20,7 +20,9 @@ class ApiLog extends Model
         'request_data',
         'response_data',
         'header_status',
-        'entity_id'
+        'entity_id',
+        'created_at',
+        'updated_at',
     ];
 
 }

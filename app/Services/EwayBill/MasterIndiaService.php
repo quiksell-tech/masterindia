@@ -29,30 +29,23 @@ class MasterIndiaService
         ) {
             if (!app()->runningInConsole()) {
 
-                $token = $this->authenticate();
+                $token = $this->authenticateNew();
 
                 if ($token) {
                     // Save new access token
-                    $this->systemParameters->updateRecord(
-                        [
-                            'sysprm_provider' => 'MasterIndia',
-                            'sysprm_name' => 'ACCESS_TOKEN',
-                        ],
-                        [
+                    $this->systemParameters
+                        ->where('sysprm_provider', 'MasterIndia')
+                        ->where('sysprm_name', 'ACCESS_TOKEN')
+                        ->update([
                             'sysprm_value' => $token,
-                        ]
-                    );
-
+                        ]);
                     // Save new expiry timestamp (50 mins)
-                    $this->systemParameters->updateRecord(
-                        [
-                            'sysprm_provider' => 'MasterIndia',
-                            'sysprm_name' => 'AUTH_TIMESTAMP',
-                        ],
-                        [
+                    $this->systemParameters
+                        ->where('sysprm_provider', 'MasterIndia')
+                        ->where('sysprm_name', 'AUTH_TIMESTAMP')
+                        ->update([
                             'sysprm_value' => Carbon::now()->addMinutes(50)->format('Y-m-d H:i:s'),
-                        ]
-                    );
+                        ]);
                 }
 
             } else {
@@ -68,7 +61,7 @@ class MasterIndiaService
         if (empty($token)) {
             abort(response()->json([
                 'success' => false,
-                'message' => 'Access Token Cannot Be Generated'
+                'message' => 'Access Token Cannot Be Generated1'
             ], 400));
         }
 
@@ -96,7 +89,7 @@ class MasterIndiaService
     public function refreshToken()
     {
 
-        $token = $this->authenticate();
+        $token = $this->authenticateNew();
         if (!$token) {
             return json_response(400, 'Access Token Cannot Be Generated');
         }
@@ -104,14 +97,14 @@ class MasterIndiaService
         $this->ACCESS_TOKEN = $token;
         $this->AUTH_TIMESTAMP = date('Y-m-d H:i:s', strtotime('+50 minutes'));
 
-        $this->systemParameters->updateRecord([
+        $this->systemParameters->update([
             'sysprm_provider' => 'MasterIndia',
             'sysprm_name' => 'ACCESS_TOKEN'
         ],
             [
                 'sysprm_value' => $token,
             ]);
-        $this->systemParameters->updateRecord([
+        $this->systemParameters->update([
             'sysprm_provider' => 'MasterIndia',
             'sysprm_name' => 'AUTH_TIMESTAMP'
         ],
@@ -126,7 +119,7 @@ class MasterIndiaService
     public function authenticate()
     {
 
-        $endpoint = $this->BASE_URL . '/oauth/access_token';
+        echo $endpoint = $this->BASE_URL . '/oauth/access_token';
 
         $data = [
             'username' => $this->USERNAME,
@@ -137,10 +130,34 @@ class MasterIndiaService
         ];
 
         $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $data, [], 'MasterIndia', 'authorize');
+
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
             if (!empty($response['access_token'])) {
                 return $response['access_token'];
+            }
+        }
+
+        return null;
+
+    }
+    public function authenticateNew()
+    {
+
+        $endpoint = $this->BASE_URL . '/api/v1/token-auth/';
+
+        $data = [
+            'username' => $this->USERNAME,
+            'password' => $this->PASSWORD,
+        ];
+
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $data, [], 'MasterIndia', 'authorize');
+
+        if ($result['error'] === false) {
+
+            $response = json_decode($result['data'], true);
+            if (!empty($response['token'])) {
+                return $response['token'];
             }
         }
 

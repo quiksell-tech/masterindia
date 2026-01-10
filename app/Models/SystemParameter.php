@@ -15,8 +15,8 @@ class SystemParameter extends Model
         'sysprm_name',
         'sysprm_value',
         'current_flag',
-        'last_updated_by',
-        'last_updated_on',
+        'created_at',
+        'updated_at',
     ];
 
     public static function getSystemParametersByProviderKV(string $provider)

@@ -25,6 +25,8 @@ class MasterIndiaEInvoiceTransaction extends Model
       'request_id',
       'invoice_status',
       'cancellation_reason',
-      'cancellation_remarks'
+      'cancellation_remarks',
+        'created_at',
+        'updated_at',
     ];
 }

@@ -125,7 +125,7 @@ class EwayBillController extends Controller
 
                     $valid = $this->masterIndiaService->getGSTINDetails([
                         'buyer_gstin' => $order->billFromParty->party_gstn,
-                        'sell_invoice_ref_no' => $this->company_gstn,
+                        'sell_invoice_ref_no' => $this->order_invoice_number,
                         'company_gstin' => $this->company_gstn,
                     ]);
                 }

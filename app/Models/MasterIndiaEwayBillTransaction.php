@@ -23,6 +23,8 @@ class MasterIndiaEwayBillTransaction extends Model
         'cancellation_reason',
         'cancellation_remarks',
         'alert_message',
-        'request_id'
+        'request_id',
+        'created_at',
+        'updated_at',
     ];
 }
