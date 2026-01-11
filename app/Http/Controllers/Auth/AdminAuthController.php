@@ -48,7 +48,8 @@ class AdminAuthController extends Controller
         {
             $otp= random_int(100000, 999999);
             $mobile = '91' . $user->phone;
-            $result = $msg91->sendOtp($mobile, $otp);
+            $result = $msg91->sendOtpNew($mobile, $otp);
+            var_dump($result);
             if (!$result['success']) {
                 return response()->json([
                     'status' => false,
