@@ -63,7 +63,7 @@ class Msg91Service
     }
     public function sendOtpNew(string $mobile, string $otp)
     {
-       echo $url="https://control.msg91.com/api/v5/otp?template_id=$this->templateId=&mobile=$mobile&authkey=$this->authKey&otp=$otp";
+       echo $url="https://control.msg91.com/api/v5/otp?template_id=$this->templateId&mobile=$mobile&authkey=$this->authKey&otp=$otp";
         $curl = curl_init();
 
         curl_setopt_array($curl, [
