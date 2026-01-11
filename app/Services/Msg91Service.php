@@ -82,7 +82,7 @@ class Msg91Service
         ]);
 
         $response = curl_exec($curl);
-        var_dump($response);
+
         $error = curl_error($curl);
 
         curl_close($curl);
