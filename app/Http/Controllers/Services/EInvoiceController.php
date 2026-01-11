@@ -42,10 +42,10 @@ class EInvoiceController extends Controller
         $response = $this->masterIndiaService->getEInvoice($data,$params);
     }
 
-    public function generateCreditNote(Request $request, MiOrder $miOrder)
+    public function generateCreditNote(Request $request,  $order_id)
     {
 
-        $items = MiOrderItem::where('order_id', $miOrder->order_id)->get();
+        $items = MiOrderItem::where('order_id', $order_id)->get();
         $order = MiOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
             'billToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -56,7 +56,7 @@ class EInvoiceController extends Controller
             'shipToAddress',
             'dispatchFromAddress',
         ])
-            ->where('order_id', $miOrder->order_id)
+            ->where('order_id', $order_id)
             ->first();
 
         if (empty($items)) {
@@ -283,10 +283,13 @@ class EInvoiceController extends Controller
 
     }
 
-    public function cancelEInvoice(Request $request, MiOrder $miOrder)
+    public function cancelEInvoice(Request $request, $order_id)
     {
 
-        $order = MiOrder::where('order_id', $miOrder->order_id)->get();
+        $order = MiOrder::where('order_id', $order_id)->get();
+        if (empty($order)) {
+            return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
+        }
         $params = [
 
             "user_gstin" => $this->company_gstn,
@@ -317,10 +320,10 @@ class EInvoiceController extends Controller
 
     }
 
-    public function generateEInvoice(Request $request, MiOrder $miOrder)
+    public function generateEInvoice(Request $request, $order_id)
     {
 
-        $items = MiOrderItem::where('order_id', $miOrder->order_id)->get();
+        $items = MiOrderItem::where('order_id', $order_id)->get();
         $order = MiOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
             'billToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -331,7 +334,7 @@ class EInvoiceController extends Controller
             'shipToAddress',
             'dispatchFromAddress',
         ])
-            ->where('order_id', $miOrder->order_id)
+            ->where('order_id', $order_id)
             ->first();
 
         if (empty($items)) {

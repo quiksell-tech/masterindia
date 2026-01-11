@@ -263,33 +263,7 @@ class MasterIndiaService
     {
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/ewayBillValidityExtend';
-
-        $params = [
-            'access_token' => $this->ACCESS_TOKEN,
-            "userGstin" => $data['company_gstin'],
-            "eway_bill_number" => $data['eway_bill_no'],
-            "place_of_consignor" => strtoupper($data['company_city']),
-            "pincode_of_consignor" => $data['company_pincode'],
-            "state_of_consignor" => strtoupper($data['company_state']),
-            "remaining_distance" => 250, // to be discused it is required
-            // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
-            // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
-            "extend_validity_reason" => $this->extension_reasons[$data['extension_reason']] ?? 'Others',
-            "extend_remarks" => $data['extension_remarks'],
-            "from_pincode" => $data['company_pincode'],
-            "consignment_status" => "M", // not required for in movement status
-            // "transit_type" => "Road", //Roan,Warehouse not required for consignment status M
-            // "address_line1" => "Dehradun", // not required for consignment status M
-            // "address_line2" => "Dehradun", // not required for consignment status M
-            // "address_line3" => "Dehradun" // not required for consignment status M
-        ];
-
-        if ($data['tracking_partner_name'] == 'Self Pickup') {
-            $params["vehicle_number"] = $data['transporter_vehicle_number']; //to be discussed
-            $params["mode_of_transport"] = "road";
-        } else {
-            //vehicle number is required to be discused
-        }
+        $params['access_token'] = $this->ACCESS_TOKEN;
 
 
         $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_validity', $data['sell_invoice_ref_no']);

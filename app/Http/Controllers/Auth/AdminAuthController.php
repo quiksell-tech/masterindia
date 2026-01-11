@@ -42,17 +42,22 @@ class AdminAuthController extends Controller
         }
 
         // Generate OTP
-        $otp = 224444; // For testing; use random_int(100000, 999999) in production
-        $mobile = '91' . $user->phone;
-        $result = $msg91->sendOtp($mobile, $otp);
+        $otp = 224444; // For testing; for develoment
 
-        if (!$result['success']) {
-            return response()->json([
-                'status' => false,
-                'message' => 'OTP failed',
-                'error' => $result['message']
-            ], 500);
+        if (app()->isProduction())
+        {
+            $otp= random_int(100000, 999999);
+            $mobile = '91' . $user->phone;
+            $result = $msg91->sendOtp($mobile, $otp);
+            if (!$result['success']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'OTP failed',
+                    'error' => $result['message']
+                ], 500);
+            }
         }
+
 
         // Update OTP and expiry
         $user->update([

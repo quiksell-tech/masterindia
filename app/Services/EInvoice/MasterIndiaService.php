@@ -34,7 +34,7 @@ class MasterIndiaService
         ) {
             if (!app()->runningInConsole()) {
 
-                $token = $this->authenticate();
+                $token = $this->authenticateNew();
 
                 if ($token) {
                     // Save new access token
@@ -101,7 +101,7 @@ class MasterIndiaService
     public function refreshToken()
     {
 
-        $token = $this->authenticate();
+        $token = $this->authenticateNew();
         if (!$token) {
             return json_response(400, 'Access Token Cannot Be Generated');
         }
@@ -125,6 +125,29 @@ class MasterIndiaService
             ]);
 
         return true;
+
+    }
+    public function authenticateNew()
+    {
+
+        $endpoint = $this->BASE_URL . '/api/v1/token-auth/';
+
+        $data = [
+            'username' => $this->USERNAME,
+            'password' => $this->PASSWORD,
+        ];
+
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $data, [], 'MasterIndia', 'authorize');
+
+        if ($result['error'] === false) {
+
+            $response = json_decode($result['data'], true);
+            if (!empty($response['token'])) {
+                return $response['token'];
+            }
+        }
+
+        return null;
 
     }
 
