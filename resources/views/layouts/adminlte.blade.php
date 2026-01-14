@@ -16,7 +16,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 @yield('style')
 <body class="layout-fixed sidebar-expand-lg">
@@ -118,6 +118,48 @@
     <!-- Footer -->
     <footer class="app-footer text-center">
         <strong>© {{ date('Y') }} AdminLTE v4</strong>
+
+        <script>
+
+            function unexpectedErrorHandler(xhr) {
+                let errorMsg = "An unexpected error occurred.";
+                if (xhr.status === 500) {
+                    errorMsg = "Internal Server Error (500). Please try again later.";
+                } else if (xhr.status === 403) {
+                    errorMsg = "Forbidden (403). You do not have permission to perform this action.";
+                }else if (xhr.status === 401) {
+                    errorMsg = "Unauthorized (401). Your session may have expired, please log in again.";
+                }else if (xhr.status === 402) {
+                    errorMsg = "Some thing went wrong";
+                }
+                // Update modal content with the error message
+                $('#errorModalBody').text(errorMsg);
+                // Show the modal (Bootstrap 5 syntax)
+                let errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
+            }
+            function showAjaxResponse(response,title)
+            {
+                if(response.status=='success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: title,
+                        text: response.message,
+                        timer: 4000,
+                        showConfirmButton: false
+                    });
+                }else{
+                    Swal.fire({
+                        icon: 'error',
+                        title: title,
+                        text: response.message,
+                        timer: 4000,
+                        showConfirmButton: false
+                    });
+                }
+            }
+
+        </script>
     </footer>
 
 </div>

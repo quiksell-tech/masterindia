@@ -55,6 +55,7 @@ class MasterIndiaService
 
         } else {
             // Token still valid
+
             $token = $this->ACCESS_TOKEN;
         }
 
@@ -119,7 +120,8 @@ class MasterIndiaService
     public function authenticate()
     {
 
-        echo $endpoint = $this->BASE_URL . '/oauth/access_token';
+        $endpoint = $this->BASE_URL . '/oauth/access_token';
+        $endpoint = 'https://clientbasic.mastersindia.co/oauth/access_token';
 
         $data = [
             'username' => $this->USERNAME,
@@ -144,7 +146,7 @@ class MasterIndiaService
     public function authenticateNew()
     {
 
-        $endpoint = $this->BASE_URL . '/api/v1/token-auth/';
+        $endpoint = $this->BASE_URL . '/token-auth/';
 
         $data = [
             'username' => $this->USERNAME,
@@ -167,9 +169,12 @@ class MasterIndiaService
 
     public function generateEwayBill($data,$parameters)
     {
+
         $endpoint = $this->BASE_URL . '/ewayBillsGenerate';
-        $parameters['access_token'] = $this->ACCESS_TOKEN;
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $parameters, [], 'MasterIndia', 'gen_e_bill', $data['order_invoice_number']);
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $parameters, $headers, 'MasterIndia', 'gen_e_bill', $data['order_invoice_number']);
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
             if (isset($response['results']['status']) && strtolower($response['results']['status']) == 'success') {
@@ -190,8 +195,10 @@ class MasterIndiaService
     {
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/ewayBillCancel';
-        $params['access_token'] = $this->ACCESS_TOKEN;
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_bill', $data['order_invoice_number']);
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'can_e_bill', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -213,9 +220,10 @@ class MasterIndiaService
     {
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/updateVehicleNumber';
-        $params['access_token'] = $this->ACCESS_TOKEN;
-
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_vcle', $data['order_invoice_number']);
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'update_vcle', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -238,9 +246,11 @@ class MasterIndiaService
     {
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/transporterIdUpdate';
-        $params['access_token'] = $this->ACCESS_TOKEN;
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
 
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_trans', $data['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'update_trans', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -263,10 +273,12 @@ class MasterIndiaService
     {
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/ewayBillValidityExtend';
-        $params['access_token'] = $this->ACCESS_TOKEN;
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
 
 
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'update_validity', $data['sell_invoice_ref_no']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'update_validity', $data['sell_invoice_ref_no']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -287,9 +299,11 @@ class MasterIndiaService
     {
         $original_data = $params;
         $endpoint = $this->BASE_URL . '/getEwayBillData';
-        $params['access_token'] = $this->ACCESS_TOKEN;
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
 
-        $result = $this->guzzleService->request($endpoint, 'GET', 'json', $params, [], [], 'MasterIndia', 'get_ebill_det', $data['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'GET', 'json', $params, [], $headers, 'MasterIndia', 'get_ebill_det', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -313,13 +327,14 @@ class MasterIndiaService
 
         $params = [
             'action' => 'GetGSTINDetails',
-            'access_token' => $this->ACCESS_TOKEN,
             "userGstin" => $data['company_gstin'],
             "gstin" => $data['buyer_gstin']
         ];
-
-        $result = $this->guzzleService->request($endpoint, 'GET', 'json', $params, [], [], 'MasterIndia', 'get_gst_det', $data['sell_invoice_ref_no']);
-
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
+        $result = $this->guzzleService->request($endpoint, 'GET', 'json', $params, [],$headers, 'MasterIndia', 'get_gst_det', $data['sell_invoice_ref_no']);
+       // request($url, $request_type, $body_type, $query_data, $data, $headers, $service='', $action='', $entity_id = null)
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
             if (isset($response['results']['status']) && strtolower($response['results']['status']) == 'success') {

@@ -19,6 +19,11 @@ Route::post(
 )->name('eway-bill.update');
 
 Route::post(
+    'eway-bill/{order_id}/eway-bill-details',
+    [EwayBillController::class, 'getEwayBillDetails']
+)->name('eway-bill.details');
+
+Route::post(
     'einvoce/{order_id}/creditnote',
     [EwayBillController::class, 'generateCreditNote']
 )->name('einvoce.creditnote');

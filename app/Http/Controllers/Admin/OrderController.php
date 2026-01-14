@@ -16,6 +16,12 @@ use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
+
+    public function __construct() {
+
+
+
+    }
     public function index()
     {
         $orders = MiOrder::with('items')->latest()->paginate(10);
@@ -323,6 +329,7 @@ class OrderController extends Controller
         $data['is_active'] ='Y';
 
         if ($validated['supply_type'] === 'inward') {
+
             $data['order_invoice_number'] = $validated['order_invoice_number'];
         }
 

@@ -436,27 +436,189 @@
                 </button>
             </div>
             @if(count($items)>0)
-            <div class="mt-3 d-flex justify-content-end">
-                <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
-                   class="btn btn-sm btn-danger">
-                    <i class="fas fa-file-pdf"></i> Invoice PDF
-                </a>
-            </div>
-                <div class="mt-3 d-flex justify-content-end">
-                    <a href="#"
-                       class="btn btn-sm btn-danger">
-                        <i class="fas fa-file-pdf"></i> Generate E-WayBill
-                    </a>
+                <div class="card mt-3">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-truck"></i> Eway Bill Action
+                        </h6>
+
+                        <h6 class="card-title mb-0">
+                            Eway Bill Status :
+                            <span class="badge
+                                @if($order->eway_status == 'C') bg-success
+                                @elseif($order->eway_status == 'E') bg-danger
+                                @elseif($order->eway_status == 'X') bg-secondary
+                                @else badge-warning
+                                @endif
+                                ">
+                                @if($order->eway_status == 'C')
+                                    CREATED
+                                @elseif($order->eway_status == 'E')
+                                    ERROR
+                                @elseif($order->eway_status == 'X')
+                                    CANCELLED
+                                @else
+                                    NA
+                                @endif
+                             </span>
+
+                            @if(!empty($order->eway_status_message))
+                                <i class="fas fa-info-circle text-info ml-1"
+                                   data-toggle="tooltip"
+                                   data-placement="top"
+                                   title="{{ $order->eway_status_message }}">
+                                </i>
+                            @endif
+                        </h6>
+                    </div>
+
+
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
+                               class="btn btn-sm btn-danger">
+                                <i class="fas fa-file-pdf"></i> Invoice PDF
+                            </a>
+
+                            <a href="#"
+                               class="btn btn-sm btn-warning"
+                               onclick="createEwayBill({{$order->order_id}})"
+                            >
+                                <i class="fas fa-road"></i> Generate E-WayBill
+                            </a>
+
+                            <a href="#"
+                               class="btn btn-sm btn-info"
+                               onclick="openCancelEwayBillModal({{$order->order_id}})"
+                            >
+                                <i class="fas fa-file-invoice"></i> Cancel E-WayBill
+                            </a>
+                            <a href="#"
+                               class="btn btn-sm btn-info" onclick="openUpdateEwayBillModal('{{$order->order_id}}')">
+                                <i class="fas fa-file-invoice"></i> Update E-WayBill
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-3 d-flex justify-content-end">
-                    <a href="#"
-                       class="btn btn-sm btn-danger">
-                        <i class="fas fa-file-pdf"></i> Generate E-invoice
-                    </a>
-                </div>
+
             @endif
         </div>
     </form>
+    <div class="modal fade" id="ewayBillModal" tabindex="-1">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ewayBillModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <form id="ewayBillForm">
+                    @csrf
+                    <input type="hidden" id="order_id">
+                    <input type="hidden" id="action_type">
+
+                    <div class="modal-body">
+
+                        {{-- CANCEL FIELDS --}}
+                        <div id="cancelFields" class="d-none">
+                            <div class="mb-3">
+                                <label>Cancel Reason</label>
+                                <select class="form-control" name="cancel_reason" >
+                                    <option value="">Select Reason</option>
+                                    @foreach(config('ewaybill.cancellation_reasons') as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Cancel Remark</label>
+                                <textarea class="form-control" name="cancel_remark"></textarea>
+                            </div>
+                        </div>
+
+                        {{-- UPDATE FIELDS --}}
+                        <div id="updateFields" class="d-none">
+
+                            <div class="mb-3">
+                                <label>Update Action</label>
+                                <select class="form-control" name="action" onchange="toggleUpdateFields(this.value)">
+                                    <option value="">Select</option>
+                                    <option value="update-vehicle">Update Vehicle</option>
+                                    <option value="update-transporter">Update Transporter</option>
+                                    <option value="extend-validity">Extend Validity</option>
+                                </select>
+                            </div>
+
+                            <div id="extendValidityFields" class="d-none">
+                                <div class="mb-3">
+                                    <label>Extension Reason</label>
+                                    <select class="form-control" name="extension_reason">
+                                        <option value="">Select</option>
+                                        <option value="natural-calamity">Natural Calamity</option>
+                                        <option value="law-order">Law & Order</option>
+                                        <option value="transshipment">Transshipment</option>
+                                        <option value="accident">Accident</option>
+                                        <option value="others">Others</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label>Extension Remarks</label>
+                                    <textarea class="form-control" name="extension_remarks"></textarea>
+                                </div>
+                            </div>
+
+                            <div id="vehicleUpdateFields" class="d-none">
+                                <div class="mb-3">
+                                    <label>Vehicle Update Reason</label>
+{{--                                    <input type="text" class="form-control" name="vehicle_update_reason">--}}
+                                    <select class="form-control" name="vehicle_update_reason">
+                                        <option value="">Select Reason</option>
+                                        @foreach(config('ewaybill.vehicle_update_reasons') as $key => $label)
+                                            <option value="{{ $key }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label>Vehicle Update Remarks</label>
+                                    <textarea class="form-control" name="vehicle_update_remarks"></textarea>
+                                </div>
+                            </div>
+                            <div id="transporterUpdateFields" class="d-none">
+
+                                <div class="mb-3">
+                                    <label>Transporter ID</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           name="transporter_id">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label>Transporter Name</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           name="transporter_name">
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
 
 @endsection
 @section('style')
@@ -474,6 +636,77 @@
     </style>
 @endsection
 @section('scripts')
+    <script>
+        function openCancelEwayBillModal(orderId)
+        {
+            resetModal();
+            $('#ewayBillModalTitle').text('Cancel E-WayBill');
+            $('#order_id').val(orderId);
+            $('#action_type').val('cancel');
+            $('#cancelFields').removeClass('d-none');
+            $('#ewayBillModal').modal('show');
+        }
+
+        function openUpdateEwayBillModal(orderId)
+        {
+            resetModal();
+            $('#ewayBillModalTitle').text('Update E-WayBill');
+            $('#order_id').val(orderId);
+            $('#action_type').val('update');
+            $('#updateFields').removeClass('d-none');
+            $('#ewayBillModal').modal('show');
+        }
+
+        function toggleUpdateFields(action)
+        {
+            $('#extendValidityFields, #vehicleUpdateFields, #transporterUpdateFields')
+                .addClass('d-none');
+
+            if (action === 'extend-validity') {
+                $('#extendValidityFields').removeClass('d-none');
+            }
+
+            if (action === 'update-vehicle') {
+                $('#vehicleUpdateFields').removeClass('d-none');
+            }
+
+            if (action === 'update-transporter') {
+                $('#transporterUpdateFields').removeClass('d-none');
+            }
+        }
+
+        function resetModal()
+        {
+            $('#ewayBillForm')[0].reset();
+            $('#cancelFields, #updateFields, #extendValidityFields, #vehicleUpdateFields, #transporterUpdateFields').addClass('d-none');
+        }
+
+        $('#ewayBillForm').submit(function (e) {
+            e.preventDefault();
+
+            let orderId = $('#order_id').val();
+            let actionType = $('#action_type').val();
+            let url = actionType === 'cancel'
+                ? `/api/eway-bill/${orderId}/cancel`
+                : `/api/eway-bill/${orderId}/update`;
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: $(this).serialize(),
+                success: function (response) {
+                    showAjaxResponse(response, 'E-Way Bill Update');
+                    $('#ewayBillModal').modal('hide');
+                },
+                error: function (xhr) {
+                    showAjaxResponse({
+                        status: 'error',
+                        message: xhr.responseJSON?.message || 'Validation failed'
+                    }, 'Action Failed');
+                }
+            });
+        });
+    </script>
 
     <script>
 
@@ -796,6 +1029,38 @@
             allowInput: true,
             defaultDate:"{{\Carbon\Carbon::parse($order->transportation_date)->format('d-M-Y') }}"
         });
+
+
+            function createEwayBill(orderId)
+            {
+                $.ajax({
+                    url: "{{ url('api/eway-bill') }}/" + orderId + "/generate",
+                    type: "POST",
+
+                    success: function (response) {
+
+                        if (response.status === 'success') {
+
+                            showAjaxResponse(response, 'E-Way Bill Created');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+
+                        }else {
+
+                            showAjaxResponse(response, 'E-Way Bill Creation Failed');
+                        }
+                    },
+                    error: function (xhr) {
+                        showAjaxResponse({
+                            status: 'error',
+                            message: xhr.responseJSON?.message || 'Something went wrong'
+                        }, 'Action Failed');
+                    }
+                });
+            }
+
+
     </script>
 
 @endsection
