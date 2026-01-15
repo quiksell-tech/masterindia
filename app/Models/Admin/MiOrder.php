@@ -36,10 +36,12 @@ class MiOrder extends Model
         'transporter_document_no',
         'eway_bill_no',
         'eway_status',
+        'eway_status_message',
         'credit_note_status',
         'credit_note_status_message',
         'irn_no',
-        'eway_status_message',
+        'irn_status_message',
+        'irn_status',
         'is_active',
     ];
     public function billFromParty()

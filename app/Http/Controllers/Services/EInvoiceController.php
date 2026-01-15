@@ -16,7 +16,7 @@ class EInvoiceController extends Controller
 {
     protected $masterIndiaService;
     protected $masterIndiaEInvoiceTransaction;
-    protected $company_gstn = '06AAICR4029F1ZI';
+    protected $company_gstn = '05AAABB0639G1Z8';
 
     public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEInvoiceTransaction $masterIndiaEInvoiceTransaction)
     {
@@ -44,7 +44,7 @@ class EInvoiceController extends Controller
 
     public function generateCreditNote(Request $request,  $order_id)
     {
-
+        die('ok');
         $items = MiOrderItem::where('order_id', $order_id)->get();
         $order = MiOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -66,10 +66,27 @@ class EInvoiceController extends Controller
         if (empty($order)) {
             return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
         }
+        if(empty($order->billFromAddress->address_id))
+        {
+            return response()->json(['status' => false, 'message' => 'please update bill FROM Address', 'data' => []]);
+        }
+        if(empty($order->billToAddress->address_id))
+        {
+            return response()->json(['status' => false, 'message' => 'please Update bill TO Address', 'data' => []]);
+        }
+        if(!empty($order->irn_no) && $order->irn_status=='C' )
+        {
+            return response()->json(['status' => false, 'message' => 'IRN Already Created', 'data' => []]);
+        }
+        if(!empty($order->eway_bill_no) && $order->eway_status!='C' )
+        {
+            return response()->json(['status' => false, 'message' => 'Eway Bill Is Not Created', 'data' => []]);
+        }
         // validate GSTN
         if (!empty($order->billToParty->party_gstn)) {
+
             if ($order->supply_type == 'outward') {
-                $valid = $this->masterIndiaService->getGSTINDetails([
+                $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billToParty->party_gstn,
                     'sell_invoice_ref_no' => $order->order_invoice_number,
                     'company_gstin' => $this->company_gstn,
@@ -77,7 +94,7 @@ class EInvoiceController extends Controller
 
             } else {
 
-                $valid = $this->masterIndiaService->getGSTINDetails([
+                $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billFromParty->party_gstn,
                     'sell_invoice_ref_no' => $this->company_gstn,
                     'company_gstin' => $this->company_gstn,
@@ -133,13 +150,13 @@ class EInvoiceController extends Controller
             if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
 
                 $igst_value = 0;
-                $cgst_value = $afterTaxValue / 2;
-                $sgst_value = $afterTaxValue / 2;
+                $cgst_value = $taxAmount / 2;
+                $sgst_value = $taxAmount / 2;
 
             } else {
                 $sgst_value = 0;
                 $cgst_value = 0;
-                $igst_value = $afterTaxValue;
+                $igst_value = $taxAmount;
             }
 
             $items_list[] = [
@@ -152,7 +169,7 @@ class EInvoiceController extends Controller
                 // "free_quantity" => 0,
                 "unit" => $item->item_unit,
                 "unit_price" => round($item->price_per_unit, 2),
-                "total_amount" => round($afterTaxValue, 2),
+                "total_amount" => round($taxableAmount, 2),
                 // "pre_tax_value" => 0,
                 "discount" => 0,
                 "other_charge" => 0,
@@ -223,7 +240,6 @@ class EInvoiceController extends Controller
                 "total_cgst_value" => round($total_cgst_value, 2),
                 "total_sgst_value" => round($total_sgst_value, 2),
                 "total_igst_value" => round($total_igst_value, 2),
-
                 "total_invoice_value" => round($order->total_after_tax, 2),
 
             ],
@@ -285,7 +301,7 @@ class EInvoiceController extends Controller
 
     public function cancelEInvoice(Request $request, $order_id)
     {
-
+        die('dsdsds');
         $order = MiOrder::where('order_id', $order_id)->get();
         if (empty($order)) {
             return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
@@ -344,10 +360,27 @@ class EInvoiceController extends Controller
         if (empty($order)) {
             return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
         }
+        if(empty($order->billFromAddress->address_id))
+        {
+            return response()->json(['status' => false, 'message' => 'please update bill FROM Address', 'data' => []]);
+        }
+        if(empty($order->billToAddress->address_id))
+        {
+            return response()->json(['status' => false, 'message' => 'please Update bill TO Address', 'data' => []]);
+        }
+        if(!empty($order->irn_no) && $order->irn_status=='C' )
+        {
+            return response()->json(['status' => false, 'message' => 'IRN Already Created', 'data' => []]);
+        }
+        if(!empty($order->eway_bill_no) && $order->eway_status!='C' )
+        {
+            return response()->json(['status' => false, 'message' => 'Eway Bill Is Not Created', 'data' => []]);
+        }
         // validate GSTN
         if (!empty($order->billToParty->party_gstn)) {
+
             if ($order->supply_type == 'outward') {
-                $valid = $this->masterIndiaService->getGSTINDetails([
+                $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billToParty->party_gstn,
                     'sell_invoice_ref_no' => $order->order_invoice_number,
                     'company_gstin' => $this->company_gstn,
@@ -355,7 +388,7 @@ class EInvoiceController extends Controller
 
             } else {
 
-                $valid = $this->masterIndiaService->getGSTINDetails([
+                $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billFromParty->party_gstn,
                     'sell_invoice_ref_no' => $this->company_gstn,
                     'company_gstin' => $this->company_gstn,
@@ -411,13 +444,13 @@ class EInvoiceController extends Controller
             if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
 
                 $igst_value = 0;
-                $cgst_value = $afterTaxValue / 2;
-                $sgst_value = $afterTaxValue / 2;
+                $cgst_value = $taxAmount / 2;
+                $sgst_value = $taxAmount / 2;
 
             } else {
                 $sgst_value = 0;
                 $cgst_value = 0;
-                $igst_value = $afterTaxValue;
+                $igst_value = $taxAmount;
             }
 
             $items_list[] = [
@@ -430,7 +463,7 @@ class EInvoiceController extends Controller
                 // "free_quantity" => 0,
                 "unit" => $item->item_unit,
                 "unit_price" => round($item->price_per_unit, 2),
-                "total_amount" => round($afterTaxValue, 2),
+                "total_amount" => round($taxableAmount, 2),
                 // "pre_tax_value" => 0,
                 "discount" => 0,
                 "other_charge" => 0,
@@ -447,7 +480,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" => $this->company_gstn,
+            "user_gstin" => '09AAAPG7885R002',//$this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",
@@ -470,7 +503,7 @@ class EInvoiceController extends Controller
                 "location" => strtoupper($order->billFromAddress->city),
                 "pincode" => $order->billFromAddress->pincode,
                 "state_code" => strtoupper($order->billFromAddress->state_code),
-                "phone_number" => $order->billFromAddress->phone,
+                "phone_number" => $order->billFromParty->phone,
                 // "email" => ""
             ],
             "buyer_details" => [
@@ -483,7 +516,7 @@ class EInvoiceController extends Controller
                 "pincode" => $order->billToAddress->pincode,
                 "place_of_supply" => $order->billToAddress->state_code,
                 "state_code" => strtoupper($order->billToAddress->state_code),
-                "phone_number" => $order->billToAddress->phone,
+                "phone_number" => $order->billToParty->phone,
                 // "email" => ""
             ],
             "reference_details" => [
@@ -531,7 +564,7 @@ class EInvoiceController extends Controller
             ];
         }
 
-        if (!empty($order->dispatchFromAddress->address_id)) {
+        if (!empty($order->shipToAddress->address_id)) {
             $params["ship_details"] = [
                 // "gstin" => "05AAAPG7885R002",
                 "legal_name" => $order->shipToParty->party_legal_name,
@@ -555,17 +588,20 @@ class EInvoiceController extends Controller
                 "state_code" => strtoupper($order->billToAddress->state_code)
             ];
         }
+//        print_r($params);
+//        die;
         $data=['order_invoice_number'=>$order->order_invoice_number];
         $response = $this->masterIndiaService->generateEInvoice($data,$params);
 
         if ($response instanceof Response) {
             //update psos for failure
+            $message=json_decode($response->getContent(), true)['message'] ?? '';
             $order->update(
                 [
                     'irn_status' => 'E',
-                    'irn_status_message' => json_decode($response->getContent(), true)['message'] ?? ''
+                    'irn_status_message' => $message,
                 ]);
-            return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
+            return response()->json(['status' => false, 'message' => $message, 'data' => []]);
         }
 
 
@@ -584,12 +620,14 @@ class EInvoiceController extends Controller
 
         if ($isRecordCreated) {
             $order->update([
+                'irn_no' => $response['message']['Irn'],
                 'irn_status' => 'C',
                 'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? '')
             ]);
-            return response()->json(['status' => true, 'message' => 'E-invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
+
+            return response()->json(['status' => true, 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
         }
 
-        return response()->json(['status' => false, 'message' => 'EInvoice created but failed to save response', 'data' => []]);
+        return response()->json(['status' => false, 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
     }
 }

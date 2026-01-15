@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Services\EwayBillController;
+use App\Http\Controllers\Services\EInvoiceController;
 
 Route::post(
     'eway-bill/{order_id}/generate',
@@ -23,17 +24,18 @@ Route::post(
     [EwayBillController::class, 'getEwayBillDetails']
 )->name('eway-bill.details');
 
+// Einvoice
 Route::post(
     'einvoce/{order_id}/creditnote',
-    [EwayBillController::class, 'generateCreditNote']
+    [EInvoiceController::class, 'generateCreditNote']
 )->name('einvoce.creditnote');
 
 Route::post(
     'einvoce/{order_id}/cancel',
-    [EwayBillController::class, 'cancelEInvoice']
+    [EInvoiceController::class, 'cancelEInvoice']
 )->name('einvoice.cancel');
 
 Route::post(
     'einvoce/{order_id}/generate',
-    [EwayBillController::class, 'generateEInvoice']
+    [EInvoiceController::class, 'generateEInvoice']
 )->name('einvoice.generate');

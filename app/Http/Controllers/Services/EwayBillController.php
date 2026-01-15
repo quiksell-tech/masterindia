@@ -91,6 +91,7 @@ class EwayBillController extends Controller
         ])
             ->where('order_id', $order_id)
             ->first();
+
         if (!($order)) {
 
             return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
@@ -99,6 +100,14 @@ class EwayBillController extends Controller
         if (empty($items)) {
 
             return response()->json(['status' => 'error', 'message' => 'Order Items Are not added', 'data' => []]);
+        }
+        if(empty($order->billFromAddress->address_id))
+        {
+            return response()->json(['status' => false, 'message' => 'please update bill FROM Address', 'data' => []]);
+        }
+        if(empty($order->billToAddress->address_id))
+        {
+            return response()->json(['status' => false, 'message' => 'please Update bill TO Address', 'data' => []]);
         }
 
         if($order->eway_status=='C' )
@@ -294,12 +303,12 @@ class EwayBillController extends Controller
             $response = $this->masterIndiaService->generateEwayBill($data,$ewayBillData);
             if ($response instanceof Response) {
                 // update psos for error
-
+                $message=json_decode($response->getContent(), true)['message'] ?? '';
                 $order->update([
                     'eway_status' => 'E',
-                    'eway_status_message' => json_decode($response->getContent(), true)['message'] ?? ''
+                    'eway_status_message' => $message
                 ]);
-                return response()->json(['status' => 'error', 'message' => $response->getContent(), true['message'] ?? '', 'data' => []]);
+                return response()->json(['status' => 'error', 'message' => $message, 'data' => []]);
             }
 
             $order->update([
@@ -401,9 +410,9 @@ class EwayBillController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
         }
 
-        if (empty( $order->eway_bill_no) || $order->eway_status != 'C') {
+        if (empty( $order->eway_bill_no) || $order->eway_status != 'N') {
 
-            return response()->json(['status' => 'error', 'message' => 'Ewaybill order is required OR It has been Already Cancelled', 'data' => []]);
+            return response()->json(['status' => 'error', 'message' => 'E-waybill No is required OR It has been Already Cancelled', 'data' => []]);
         }
 
         $params = [

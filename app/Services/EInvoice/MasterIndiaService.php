@@ -37,27 +37,19 @@ class MasterIndiaService
                 $token = $this->authenticateNew();
 
                 if ($token) {
-                    // Save new access token
-                    $this->systemParameters->updateRecord(
-                        [
-                            'sysprm_provider' => 'MasterIndia',
-                            'sysprm_name' => 'ACCESS_TOKEN',
-                        ],
-                        [
+                    $this->systemParameters
+                        ->where('sysprm_provider', 'MasterIndia')
+                        ->where('sysprm_name', 'ACCESS_TOKEN')
+                        ->update([
                             'sysprm_value' => $token,
-                        ]
-                    );
-
+                        ]);
                     // Save new expiry timestamp (50 mins)
-                    $this->systemParameters->updateRecord(
-                        [
-                            'sysprm_provider' => 'MasterIndia',
-                            'sysprm_name' => 'AUTH_TIMESTAMP',
-                        ],
-                        [
+                    $this->systemParameters
+                        ->where('sysprm_provider', 'MasterIndia')
+                        ->where('sysprm_name', 'AUTH_TIMESTAMP')
+                        ->update([
                             'sysprm_value' => Carbon::now()->addMinutes(50)->format('Y-m-d H:i:s'),
-                        ]
-                    );
+                        ]);
                 }
 
             } else {
@@ -130,8 +122,8 @@ class MasterIndiaService
     public function authenticateNew()
     {
 
-        $endpoint = $this->BASE_URL . '/api/v1/token-auth/';
-
+        //$endpoint = $this->BASE_URL . '/api/v1/token-auth/';
+        $endpoint = $this->BASE_URL . '/token-auth/';
         $data = [
             'username' => $this->USERNAME,
             'password' => $this->PASSWORD,
@@ -183,10 +175,12 @@ class MasterIndiaService
     {
 
         $original_data = $params;
-        $endpoint = $this->BASE_URL . '/generateEinvoice';
-        $params['access_token'] = $this->ACCESS_TOKEN;
+        $endpoint = $this->BASE_URL . '/einvoice/';
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
 
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_e_inv', $data['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'gen_e_inv', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
@@ -291,20 +285,21 @@ class MasterIndiaService
 
         $original_data = $data;
         $endpoint = $this->MI_COMMON_API . '/searchgstin';
-
+        $endpoint = $this->BASE_URL . '/get-gstin-details';
         $headers = [
-            'Authorization' => 'Bearer ' . $this->ACCESS_TOKEN,
-            'client_id' => $this->CLIENT_ID
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
         ];
-
         $query = [
-            "gstin" => $data['gstin_number'],
+            "gstin" => $data['buyer_gstin'],
+            "user_gstin" => $data['company_gstin'],
         ];
 
         $result = $this->guzzleService->request($endpoint, 'GET', 'json', $query, [], $headers, 'MasterIndia', 'get_gstin_det');
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
+            var_dump($response);
+            die;
             if (isset($response['error']) && $response['error'] === false) {
                 return [
                     "message" => [
@@ -340,7 +335,44 @@ class MasterIndiaService
 
         return json_response(400, $response['message'] ?? $result['message']);
     }
+    public function getGSTINDetailsNew($data)
+    {
+        $original_data = $data;
+        $endpoint = $this->BASE_URL . '/getEwayBillData';
 
+        $params = [
+            'action' => 'GetGSTINDetails',
+            "userGstin" => $data['company_gstin'],
+            "gstin" => $data['buyer_gstin']
+        ];
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
+        $result = $this->guzzleService->request($endpoint, 'GET', 'json', $params, [],$headers, 'MasterIndia', 'get_gst_det', $data['sell_invoice_ref_no']);
+        // request($url, $request_type, $body_type, $query_data, $data, $headers, $service='', $action='', $entity_id = null)
+        if ($result['error'] === false) {
+            $response = json_decode($result['data'], true);
+            if (isset($response['results']['status']) && strtolower($response['results']['status']) == 'success') {
+                if (isset($response['results']['message']['status'])) {
+                    if ($response['results']['message']['status'] == 'ACT')
+                        $response['results']['gstin_status'] = 'active';
+                    else
+                        $response['results']['gstin_status'] = 'not_active';
+                    return $response['results'];
+                } else {
+                    return json_response(400, $response['results']['message'] ?? 'GSTIN Details Not Fetched');
+                }
+
+            }
+        }
+
+        if (isset($result['header_status']) && $result['header_status'] == 401) {
+            $this->refreshToken();
+            return $this->getGSTINDetailsNew($original_data);
+        }
+
+        return json_response(400, ($response['results']['message'] ?? $result['message']) . ' ' . ($response['results']['code'] ?? ''));
+    }
 
     public function syncGSTINDetails($data)
     {

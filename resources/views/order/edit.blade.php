@@ -480,22 +480,83 @@
                                 <i class="fas fa-file-pdf"></i> Invoice PDF
                             </a>
 
-                            <a href="#"
+                            <a href="javascript:void(0)"
                                class="btn btn-sm btn-warning"
                                onclick="createEwayBill({{$order->order_id}})"
                             >
                                 <i class="fas fa-road"></i> Generate E-WayBill
                             </a>
 
-                            <a href="#"
+                            <a href="javascript:void(0)"
                                class="btn btn-sm btn-info"
-                               onclick="openCancelEwayBillModal({{$order->order_id}})"
+                               onclick="openCancelEwayBillModal('{{$order->order_id}}')"
                             >
                                 <i class="fas fa-file-invoice"></i> Cancel E-WayBill
                             </a>
-                            <a href="#"
+                            <a href="javascript:void(0)"
                                class="btn btn-sm btn-info" onclick="openUpdateEwayBillModal('{{$order->order_id}}')">
                                 <i class="fas fa-file-invoice"></i> Update E-WayBill
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {{--      Einvoice Section        --}}
+                <div class="card mt-3">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-truck"></i> E-Invoice Action
+                        </h6>
+
+                        <h6 class="card-title mb-0">
+                            EInvoice Status :
+                            <span class="badge
+                                @if($order->irn_status == 'C') bg-success
+                                @elseif($order->irn_status == 'E') bg-danger
+                                @elseif($order->irn_status == 'X') bg-secondary
+                                @else badge-warning
+                                @endif
+                                ">
+                                @if($order->irn_status == 'C')
+                                    CREATED
+                                @elseif($order->irn_status == 'E')
+                                    ERROR
+                                @elseif($order->irn_status == 'X')
+                                    CANCELLED
+                                @else
+                                    NA
+                                @endif
+                             </span>
+
+                            @if(!empty($order->irn_status_message))
+                                <i class="fas fa-info-circle text-info ml-1"
+                                   data-toggle="tooltip"
+                                   data-placement="top"
+                                   title="{{ $order->irn_status_message }}">
+                                </i>
+                            @endif
+                        </h6>
+                    </div>
+
+
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-end gap-2">
+
+                            <a href="javascript:void(0)"
+                               class="btn btn-sm btn-warning"
+                               onclick="createEInvoice({{$order->order_id}})">
+                                <i class="fas fa-road"></i> Generate E-Invoice
+                            </a>
+                            <a href="javascript:void(0)"
+                               class="btn btn-sm btn-warning"
+                               onclick="createEInvoiceCreditNote({{$order->order_id}})">
+                                <i class="fas fa-road"></i> Generate Credit Note
+                            </a>
+
+                            <a href="javascript:void(0)"
+                               class="btn btn-sm btn-info"
+                               onclick="openCancelEInvoiceModal('{{ $order->order_id }}')">
+                                <i class="fas fa-file-invoice"></i> Cancel E-Invoice
                             </a>
                         </div>
                     </div>
@@ -504,6 +565,8 @@
             @endif
         </div>
     </form>
+
+{{--    Eway Bill Modal--}}
     <div class="modal fade" id="ewayBillModal" tabindex="-1">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
@@ -619,6 +682,72 @@
             </div>
         </div>
     </div>
+
+    <!-- Cancel E-Invoice Modal -->
+    <div class="modal fade" id="cancelEInvoiceModal" tabindex="-1" role="dialog" aria-labelledby="cancelEInvoiceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
+            <form id="cancelEInvoiceForm">
+                @csrf
+
+                <input type="hidden" name="einvoice_order_id" id="einvoice_order_id">
+
+                <div class="modal-content">
+                    <div class="modal-header bg-info">
+                        <h5 class="modal-title" id="cancelEInvoiceModalLabel">
+                            <i class="fas fa-file-invoice"></i> Cancel E-Invoice
+                        </h5>
+
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- Cancel Reason -->
+                        <div class="form-group">
+                            <label for="cancel_reason">
+                                Cancel Reason <span class="text-danger">*</span>
+                            </label>
+                            <select name="cancel_reason" id="cancel_reason" class="form-control" required>
+                                <option value="">-- Select Reason --</option>
+                                @foreach(config('einvoice.cancellation_reasons') as $label => $value)
+                                    <option value="{{ $value }}">
+                                        {{ ucwords(str_replace('-', ' ', $label)) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Cancel Remarks -->
+                        <div class="form-group">
+                            <label for="cancel_remarks">
+                                Cancel Remarks <span class="text-danger">*</span>
+                            </label>
+                            <textarea
+                                name="cancel_remarks"
+                                id="cancel_remarks"
+                                class="form-control"
+                                rows="3"
+                                maxlength="100"
+                                placeholder="Enter remarks (max 100 characters)"
+                                required></textarea>
+                            <small class="text-muted">
+                                <span id="remarks_count">0</span>/100 characters
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+
+                        <button type="button" class="btn btn-info" id="cancelEinvoiceBtn">
+                            <i class="fas fa-ban"></i> Cancel E-Invoice
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
 @endsection
 @section('style')
@@ -1061,6 +1190,144 @@
             }
 
 
+    </script>
+    <script>
+        // Einvoce Script
+        function openCancelEInvoiceModal(orderId) {
+
+            document.getElementById('einvoice_order_id').value = orderId;
+            document.getElementById('cancel_reason').value = '';
+            document.getElementById('cancel_remarks').value = '';
+            document.getElementById('remarks_count').innerText = 0;
+
+            $('#cancelEInvoiceModal').modal('show');
+        }
+
+        document.getElementById('cancel_remarks').addEventListener('input', function () {
+        document.getElementById('remarks_count').innerText = this.value.length;
+        });
+
+        $('#cancelEinvoiceBtn').on('click', function () {
+
+            let orderId = $('#einvoice_order_id').val();
+
+            if (!orderId) {
+                showAjaxResponse({
+                    status: 'error',
+                    message: 'Invalid Order ID'
+                }, 'Action Failed');
+                return;
+            }
+
+            let url = `/api/einvoce/${orderId}/cancel`;
+            let btn = $(this);
+
+            // Optional frontend validation
+            if (!$('#cancel_reason').val()) {
+                showAjaxResponse({
+                    status: 'error',
+                    message: 'Please select cancel reason'
+                }, 'Validation Error');
+                return;
+            }
+
+            if (!$('#cancel_remarks').val()) {
+                showAjaxResponse({
+                    status: 'error',
+                    message: 'Please enter cancel remarks'
+                }, 'Validation Error');
+                return;
+            }
+
+            btn.prop('disabled', true)
+                .html('<i class="fas fa-spinner fa-spin"></i> Cancelling...');
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: $('#cancelEInvoiceForm').serialize(),
+                success: function (response) {
+                    showAjaxResponse(response, 'E-Invoice Cancel');
+
+                    if (response.status === true || response.status === 'success') {
+                        $('#cancelEInvoiceModal').modal('hide');
+
+                        // Optional UI refresh
+                        setTimeout(() => location.reload(), 800);
+                    }
+                },
+                error: function (xhr) {
+                    showAjaxResponse({
+                        status: 'error',
+                        message: xhr.responseJSON?.message || 'Validation failed'
+                    }, 'Action Failed');
+                },
+                complete: function () {
+                    btn.prop('disabled', false)
+                        .html('<i class="fas fa-ban"></i> Cancel E-Invoice');
+                }
+            });
+        });
+
+
+        function createEInvoice(orderId)
+        {
+            $.ajax({
+                url: "{{ url('api/einvoce') }}/" + orderId + "/generate",
+                type: "POST",
+
+                success: function (response) {
+
+                    if (response.status === 'success') {
+
+                        showAjaxResponse(response, 'E-Way Bill Created');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+
+                    }else {
+
+                        showAjaxResponse(response, 'E-Way Bill Creation Failed');
+                    }
+                },
+                error: function (xhr) {
+                    showAjaxResponse({
+                        status: 'error',
+                        message: xhr.responseJSON?.message || 'Something went wrong'
+                    }, 'Action Failed');
+                }
+            });
+        }
+
+
+        function createEInvoiceCreditNote(orderId)
+        {
+            $.ajax({
+                url: "{{ url('api/einvoce') }}/" + orderId + "/creditnote",
+                type: "POST",
+
+                success: function (response) {
+
+                    if (response.status === 'success') {
+
+                        showAjaxResponse(response, 'E-Way Bill Created');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+
+                    }else {
+
+                        showAjaxResponse(response, 'E-Way Bill Creation Failed');
+                    }
+                },
+                error: function (xhr) {
+                    showAjaxResponse({
+                        status: 'error',
+                        message: xhr.responseJSON?.message || 'Something went wrong'
+                    }, 'Action Failed');
+                }
+            });
+        }
     </script>
 
 @endsection
