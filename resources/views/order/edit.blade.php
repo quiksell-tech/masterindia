@@ -1303,21 +1303,21 @@
         function createEInvoiceCreditNote(orderId)
         {
             $.ajax({
-                url: "{{ url('api/einvoce') }}/" + orderId + "/creditnote",
+                url: "{{ url('api/creditnote-data') }}/" + orderId + "/insert",
                 type: "POST",
 
                 success: function (response) {
 
                     if (response.status === 'success') {
 
-                        showAjaxResponse(response, 'E-Way Bill Created');
+                        showAjaxResponse(response, 'CreditNote');
                         setTimeout(() => {
-                            location.reload();
+                            window.location.href = "/creditnote/" + orderId + "/edit";
                         }, 1500);
 
                     }else {
 
-                        showAjaxResponse(response, 'E-Way Bill Creation Failed');
+                        showAjaxResponse(response, 'CreditNote');
                     }
                 },
                 error: function (xhr) {

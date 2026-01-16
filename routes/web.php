@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CompanyAddressController;
+use App\Http\Controllers\Admin\CreditnoteController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\MiCompanyController;
@@ -108,5 +109,24 @@ Route::middleware('admin.auth')->group(function () {
         ->name('get.parties');
 
 
+
+
+    Route::prefix('creditnote')->group(function () {
+
+        // List credit notes
+        Route::get('/', [CreditnoteController::class, 'index'])
+            ->name('creditnote.index');
+
+        // Edit credit note with items
+        Route::get('/{creditnoteId}/edit', [CreditnoteController::class, 'edit'])
+            ->name('creditnote.edit');
+
+        // Store / Update credit note + items
+        Route::post('/{creditnoteId}/store', [CreditnoteController::class, 'store'])
+            ->name('creditnote.store');
+
+        Route::get('/{order}/invoice-pdf', [InvoiceController::class, 'generateCreditNoteInvoce'])
+            ->name('creditnote.invoice.pdf');
+    });
 
 });

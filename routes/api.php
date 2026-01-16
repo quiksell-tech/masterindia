@@ -39,3 +39,11 @@ Route::post(
     'einvoce/{order_id}/generate',
     [EInvoiceController::class, 'generateEInvoice']
 )->name('einvoice.generate');
+
+
+// To insert Data Into masterindia_creditnote_transactions and Items
+Route::post(
+    'creditnote-data/{order_id}/insert',
+    [EInvoiceController::class, 'insertCreditNoteData']
+)->name('einvoce.creditnote');
+

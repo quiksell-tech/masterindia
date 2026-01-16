@@ -103,6 +103,13 @@
                             <p>Orders</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('creditnote.index') }}"
+                           class="nav-link {{ request()->routeIs('creditnote.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-map-marker-alt"></i>
+                            <p>CreditNote</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>

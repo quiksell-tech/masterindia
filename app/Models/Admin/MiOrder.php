@@ -163,7 +163,7 @@ class MiOrder extends Model
 
         $lastSequence = self::where('financial_year', $fy)
             ->max('invoice_sequence_no');
-
+        $lastSequence=intval($lastSequence);
         $nextSequence = $lastSequence ? $lastSequence + 1 : 1;
 
         $invoiceNo = sprintf(

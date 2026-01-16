@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Services;
 
+use App\Models\Admin\MiCreditnoteItem;
 use App\Models\Admin\MiOrder;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\MiOrderItem;
 use App\Models\MasterIndiaEInvoiceTransaction;
+use App\Models\MiCreditnoteTransaction;
 use App\Services\EInvoice\MasterIndiaService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -74,14 +76,11 @@ class EInvoiceController extends Controller
         {
             return response()->json(['status' => false, 'message' => 'please Update bill TO Address', 'data' => []]);
         }
-        if(!empty($order->irn_no) && $order->irn_status=='C' )
+        if(empty($order->irn_no)  )
         {
-            return response()->json(['status' => false, 'message' => 'IRN Already Created', 'data' => []]);
+            return response()->json(['status' => false, 'message' => 'IRN Not  Created', 'data' => []]);
         }
-        if(!empty($order->eway_bill_no) && $order->eway_status!='C' )
-        {
-            return response()->json(['status' => false, 'message' => 'Eway Bill Is Not Created', 'data' => []]);
-        }
+
         // validate GSTN
         if (!empty($order->billToParty->party_gstn)) {
 
@@ -104,12 +103,12 @@ class EInvoiceController extends Controller
 
             if ($valid instanceof Response) {
                 // update psos for error
-
+                $message=json_decode($valid->getContent(), true)['message'] ?? '';
                 $order->update([
                     'irn_status' => 'E',
-                    'irn_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
+                    'irn_status_message' => $message,
                 ]);
-                return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
+                return response()->json(['status' => false, 'message' => $message, 'data' => []]);
             }
 
             if ($valid['gstin_status'] != 'active') {
@@ -196,7 +195,7 @@ class EInvoiceController extends Controller
             ],
             "document_details" => [
                 "document_type" => "CRN",
-                "document_number" => strtoupper($order->order_invoice_number),
+                "document_number" => strtoupper($order->order_invoice_number), // neeed to change from auto Or given
                 "document_date" => date('d/m/Y', strtotime($order->order_invoice_date))
             ],
             "seller_details" => [
@@ -269,7 +268,7 @@ class EInvoiceController extends Controller
             ];
         }
 
-        if (!empty($order->dispatchFromAddress->address_id)) {
+        if (!empty($order->shipToAddress->address_id)) {
             $params["ship_details"] = [
                 // "gstin" => "05AAAPG7885R002",
                 "legal_name" => $order->shipToParty->party_legal_name,
@@ -293,6 +292,7 @@ class EInvoiceController extends Controller
                 "state_code" => strtoupper($order->billToAddress->state_code)
             ];
         }
+
         $data=['order_invoice_number'=>$order->order_invoice_number];
 
         $response = $this->masterIndiaService->generateCreditNote($data,$params);
@@ -629,5 +629,95 @@ class EInvoiceController extends Controller
         }
 
         return response()->json(['status' => false, 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
+    }
+
+    public function insertCreditNoteData(Request $request, $order_id)
+    {
+        // fetch items from order table then show
+        $items = MiOrderItem::where('order_id', $order_id)->get();
+
+        $order = MiOrder::with([
+            'billFromParty:party_id,party_trade_name',
+            'billToParty:party_id,party_trade_name',
+            'shipToParty:party_id,party_trade_name',
+            'dispatchFromParty:party_id,party_trade_name',
+
+            'billFromAddress',
+            'billToAddress',
+            'shipToAddress',
+            'dispatchFromAddress',
+        ])
+            ->where('order_id', $order_id)
+            ->first();
+        if(!$order) {
+            return response()->json(['status' => 'error', 'message' => 'Order Not found', 'data' => []]);
+        }
+        if(empty($items)) {
+            return response()->json(['status' => 'error', 'message' => 'Items are not added to order ', 'data' => []]);
+        }
+
+        if(empty($order->billFromParty->party_id))
+        {
+            return response()->json(['status' => 'error', 'message' => 'please update order FROM Party', 'data' => []]);
+        }
+        if(empty($order->billToParty->party_id))
+        {
+            return response()->json(['status' => 'error', 'message' => 'please update order Bill to Party', 'data' => []]);
+        }
+        if(empty($order->billFromAddress->address_id))
+        {
+            return response()->json(['status' => 'error', 'message' => 'please update bill FROM Address', 'data' => []]);
+        }
+        if(empty($order->billToAddress->address_id))
+        {
+            return response()->json(['status' => 'error', 'message' => 'please Update bill TO Address', 'data' => []]);
+        }
+
+        /** 2. Get or create credit note */
+        $creditnote = MiCreditnoteTransaction::where('order_id', $order_id)->first();
+
+        $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumber('CREW');
+        if (!$creditnote) {
+            $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumber('CREW');
+            $creditnote = MiCreditnoteTransaction::create([
+                'creditnote_invoice_no'  => $creditnoteInvoice['invoice_no'],
+                'financial_year'  => $creditnoteInvoice['financial_year'],
+                'sequence_no'  => $creditnoteInvoice['sequence_no'],
+                'order_id'            => $order_id,
+                'order_invoice_number' => $order->order_invoice_number,
+                'einvoice_no'           => $order->irn_no,
+                'credit_note_status'  => 'N',
+                'return_type'  => 'SALES_RETURN',
+                'credit_note_date'    => now(),
+            ]);
+        }
+
+        /** 3. Delete existing credit note items */
+        MiCreditnoteItem::where('creditnote_id', $creditnote->creditnote_id)->delete();
+
+        /** 4. Insert items from order items */
+        $creditnoteItems = [];
+
+        foreach ($items as $item) {
+            $creditnoteItems[] = [
+                'creditnote_id'        => $creditnote->creditnote_id,
+                'item_id'              => $item->item_id,
+                'item_name'            => $item->item_name,
+                'item_description'     => $item->item_description,
+                'item_code'            => $item->item_code,
+                'hsn_code'             => $item->hsn_code,
+                'item_unit'            => $item->item_unit,
+                'total_item_quantity'  => $item->total_item_quantity,
+                'price_per_unit'       => $item->price_per_unit,
+                'tax_percentage'       => $item->tax_percentage,
+                'taxable_amount'       => $item->taxable_amount,
+                'after_tax_value'      => $item->after_tax_value,
+                'created_at'           => now(),
+                'updated_at'           => now(),
+            ];
+        }
+
+        MiCreditnoteItem::insert($creditnoteItems);
+        return response()->json(['status' => 'success', 'message' => 'CreditNote data has been inserted', 'data' => []]);
     }
 }
