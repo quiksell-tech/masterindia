@@ -1249,10 +1249,8 @@
                 success: function (response) {
                     showAjaxResponse(response, 'E-Invoice Cancel');
 
-                    if (response.status === true || response.status === 'success') {
-                        $('#cancelEInvoiceModal').modal('hide');
-
-                        // Optional UI refresh
+                    if (response.status === 'success') {
+                        $('#cancelEInvoiceModal').modal('hide');                        // Optional UI refresh
                         setTimeout(() => location.reload(), 800);
                     }
                 },
@@ -1312,7 +1310,7 @@
 
                         showAjaxResponse(response, 'CreditNote');
                         setTimeout(() => {
-                            window.location.href = "/creditnote/" + orderId + "/edit";
+                            window.location.href = "/creditnote/" + response.data.creditnote_id + "/edit";
                         }, 1500);
 
                     }else {

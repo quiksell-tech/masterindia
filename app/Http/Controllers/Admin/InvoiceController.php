@@ -50,7 +50,7 @@ class InvoiceController extends Controller
         $pdf = Pdf::loadView('creditnote.creditnote-tax-invoice', compact('order', 'creditnote'))
             ->setPaper('A4', 'portrait');
 
-        return $pdf->download('Invoice-'.$order->order_invoice_number.'.pdf');
+        return $pdf->download('Invoice-'.$creditnote->creditnote_invoice_no.'.pdf');
         // OR ->stream() to preview in browser
     }
 

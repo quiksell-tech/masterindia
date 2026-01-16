@@ -300,8 +300,7 @@ class MasterIndiaService
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
-            var_dump($response);
-            die;
+
             if (isset($response['error']) && $response['error'] === false) {
                 return [
                     "message" => [

@@ -103,11 +103,11 @@ class EwayBillController extends Controller
         }
         if(empty($order->billFromAddress->address_id))
         {
-            return response()->json(['status' => false, 'message' => 'please update bill FROM Address', 'data' => []]);
+            return response()->json(['status' => 'error', 'message' => 'please update bill FROM Address', 'data' => []]);
         }
         if(empty($order->billToAddress->address_id))
         {
-            return response()->json(['status' => false, 'message' => 'please Update bill TO Address', 'data' => []]);
+            return response()->json(['status' => 'error', 'message' => 'please Update bill TO Address', 'data' => []]);
         }
 
         if($order->eway_status=='C' )
@@ -138,12 +138,12 @@ class EwayBillController extends Controller
 
                 if ($valid instanceof Response) {
                     // update psos for error
-
+                    $message=json_decode($valid->getContent(), true)['message']  ?? '';
                     $order->update([
                         'eway_status' => 'E',
-                        'eway_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
+                        'eway_status_message' =>$message
                     ]);
-                    return response()->json(['status' => 'error', 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
+                    return response()->json(['status' => 'error', 'message' =>$message, 'data' => []]);
                 }
 
                 if ($valid['gstin_status'] != 'active') {
@@ -391,7 +391,7 @@ class EwayBillController extends Controller
         if (count($errors)) {
             //return json_response(422, 'Invalid or Missing parameters', compact('errors'));
 
-            return response()->json(['status' => false, 'message' => 'Invalid or Missing parameters', 'data' => []]);
+            return response()->json(['status' => 'error', 'message' => 'Invalid or Missing parameters', 'data' => []]);
         }
         $order = MiOrder::with([
 
@@ -499,7 +499,7 @@ class EwayBillController extends Controller
 
         if (count($errors)) {
             // return json_response(422, 'Invalid or Missing parameters', compact('errors'));
-            return response()->json(['status' => false, 'message' => 'Invalid or Missing parameters', 'data' => []]);
+            return response()->json(['status' => 'error', 'message' => 'Invalid or Missing parameters', 'data' => []]);
         }
         $order = MiOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -786,7 +786,7 @@ class EwayBillController extends Controller
         $order = MiOrder::where('order_id', $order_id)->first();
 
         if(empty($order)){
-            return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
+            return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
         }
         $data=['order_invoice_number' => $order->order_invoice_number];
         $params = [

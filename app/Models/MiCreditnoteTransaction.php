@@ -30,7 +30,13 @@ class MiCreditnoteTransaction extends Model
         'sequence_no',
         'creditnote_pdf_url',
         'updated_at',
-        'created_at',
+        'ack_no',
+        'creditnote_irn_no',
+        'qrcode_url',
+        'einvoice_pdf_url',
+        'status_received',
+        'alert_message',
+        'request_id',
     ];
     protected $casts = [
         'return_date' => 'date',

@@ -522,7 +522,6 @@
         flatpickr("#order_invoice_date", {
             dateFormat: "d-M-Y",
             allowInput: true,
-
             minDate: new Date(
                 {{ \Carbon\Carbon::parse($latestDate)->year }},
                 {{ \Carbon\Carbon::parse($latestDate)->month - 1 }},
