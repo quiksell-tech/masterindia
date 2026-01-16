@@ -44,10 +44,20 @@ class EInvoiceController extends Controller
         $response = $this->masterIndiaService->getEInvoice($data,$params);
     }
 
-    public function generateCreditNote(Request $request,  $order_id)
+    public function generateCreditNote(Request $request,  $creditnoteId)
     {
-        die('ok');
-        $items = MiOrderItem::where('order_id', $order_id)->get();
+        $creditnote = MiCreditnoteTransaction::with('items')
+            ->where('creditnote_id', $creditnoteId)
+            ->first();
+
+        if(!$creditnote){
+
+          return response()->json(['status' => false, 'message' => 'Credit Note Order Not Found', 'data' => []]);
+        }
+        if (empty($creditnote->items)) {
+
+            return response()->json(['status' => false, 'message' => 'Credit Note Items Are not added', 'data' => []]);
+        }
         $order = MiOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
             'billToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -58,16 +68,15 @@ class EInvoiceController extends Controller
             'shipToAddress',
             'dispatchFromAddress',
         ])
-            ->where('order_id', $order_id)
+            ->where('order_id', $creditnote->order_id)
             ->first();
 
-        if (empty($items)) {
-            return response()->json(['status' => false, 'message' => 'Order Items Are not added', 'data' => []]);
-        }
+
 
         if (empty($order)) {
-            return response()->json(['status' => false, 'message' => 'Order is not found', 'data' => []]);
+            return response()->json(['status' => false, 'message' => 'Related order  is not found', 'data' => []]);
         }
+
         if(empty($order->billFromAddress->address_id))
         {
             return response()->json(['status' => false, 'message' => 'please update bill FROM Address', 'data' => []]);
@@ -76,11 +85,18 @@ class EInvoiceController extends Controller
         {
             return response()->json(['status' => false, 'message' => 'please Update bill TO Address', 'data' => []]);
         }
+
         if(empty($order->irn_no)  )
         {
             return response()->json(['status' => false, 'message' => 'IRN Not  Created', 'data' => []]);
         }
-
+        if (empty($order->billFromParty->party_id)) {
+            return response()->json(['status' => false, 'message' => 'Bill From Party Not Found', 'data' => []]);
+        }
+        if(empty($order->billToParty->party_id))
+        {
+            return response()->json(['status' => false, 'message' => 'Bill to Party Not Found', 'data' => []]);
+        }
         // validate GSTN
         if (!empty($order->billToParty->party_gstn)) {
 
@@ -104,9 +120,9 @@ class EInvoiceController extends Controller
             if ($valid instanceof Response) {
                 // update psos for error
                 $message=json_decode($valid->getContent(), true)['message'] ?? '';
-                $order->update([
-                    'irn_status' => 'E',
-                    'irn_status_message' => $message,
+                $creditnote->update([
+                    'credit_note_status' => 'E',
+                    'credit_note_status_message' => $message,
                 ]);
                 return response()->json(['status' => false, 'message' => $message, 'data' => []]);
             }
@@ -116,8 +132,8 @@ class EInvoiceController extends Controller
                 // set error to skip this record for batch process
 
                 $order->update([
-                    'irn_status' => 'E',
-                    'irn_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
+                    'credit_note_status' => 'E',
+                    'credit_note_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
                 ]);
                 return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
 
@@ -140,7 +156,7 @@ class EInvoiceController extends Controller
         $items_list = [];
         $i = 1;
 
-        foreach ($items as $item) {
+        foreach ($creditnote->items as $item) {
 
             $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
             $taxAmount = ($taxableAmount * $item->tax_percentage) / 100;
@@ -195,8 +211,8 @@ class EInvoiceController extends Controller
             ],
             "document_details" => [
                 "document_type" => "CRN",
-                "document_number" => strtoupper($order->order_invoice_number), // neeed to change from auto Or given
-                "document_date" => date('d/m/Y', strtotime($order->order_invoice_date))
+                "document_number" => strtoupper($creditnote->creditnote_invoice_no), // neeed to change from auto Or given
+                "document_date" => date('d/m/Y', strtotime($creditnote->credit_note_date))
             ],
             "seller_details" => [
                 "gstin" => $order->billFromParty->party_gstn,
@@ -227,8 +243,8 @@ class EInvoiceController extends Controller
             "reference_details" => [
 
                 "preceding_document_details" => [[
-                    "reference_of_original_invoice" => strtoupper($order->order_invoice_number),
-                    "preceding_invoice_date" => date('d/m/Y', strtotime($order->order_invoice_date)),
+                    "reference_of_original_invoice" => strtoupper($creditnote->creditnote_invoice_no),
+                    "preceding_invoice_date" => date('d/m/Y', strtotime($creditnote->credit_note_date)),
                     // "other_reference" => "2334"
                 ]],
 
@@ -293,9 +309,39 @@ class EInvoiceController extends Controller
             ];
         }
 
-        $data=['order_invoice_number'=>$order->order_invoice_number];
+        $data=['creditnote_invoice_no'=>$creditnote->creditnote_invoice_no];
 
         $response = $this->masterIndiaService->generateCreditNote($data,$params);
+        if ($response instanceof Response) {
+            //update psos for failure
+            $message=json_decode($response->getContent(), true)['message'] ?? '';
+            $creditnote->update(
+                [
+                    'credit_note_status' => 'E',
+                    'credit_note_status_message' => $message,
+                ]);
+            return response()->json(['status' => false, 'message' => $message, 'data' => []]);
+        }
+
+        $updateData=[
+
+            'ack_no' => $response['message']['AckNo'],
+            'ack_date' => $response['message']['AckDt'],
+            'irn_no' => $response['message']['Irn'],
+            'qrcode_url' => $response['message']['QRCodeUrl'],
+            'einvoice_pdf_url' => $response['message']['EinvoicePdf'],
+            'status_received' => $response['message']['Status'],
+            'alert_message' => $response['message']['alert'],
+            'request_id' => $response['requestId'],
+            'credit_note_status' => 'C'
+        ];
+        $isRecordUpdated=$creditnote->update($updateData);
+        if ($isRecordUpdated) {
+
+            return response()->json(['status' => true, 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
+        }
+
+        return response()->json(['status' => false, 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
 
     }
 
@@ -313,6 +359,7 @@ class EInvoiceController extends Controller
             "cancel_reason" => $request->cancellation_reasons,
             "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
         ];
+
         $data=['order_invoice_number'=>$order->order_invoice_number];
         $response = $this->masterIndiaService->cancelEInvoice($data,$params);
 

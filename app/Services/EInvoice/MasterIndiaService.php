@@ -208,10 +208,12 @@ class MasterIndiaService
     {
 
         $original_data = $params;
-        $endpoint = $this->BASE_URL . '/generateEinvoice';
-        $params['access_token'] = $this->ACCESS_TOKEN;
+        $endpoint = $this->BASE_URL . '/einvoice/';
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
 
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'gen_cr_note', $data['order_invoice_number']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'gen_cr_note', $data['creditnote_invoice_no']);
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
             if (isset($response['results']['status']) && strtolower($response['results']['status']) == 'success') {

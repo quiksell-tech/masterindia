@@ -231,7 +231,7 @@
 @section('scripts')
     <script>
 
-        function createEInvoice(orderId)
+        function createCreditNote(orderId)
         {
             $.ajax({
                 url: "<?php echo e(url('api/einvoce')); ?>/" + orderId + "/creditnote",
