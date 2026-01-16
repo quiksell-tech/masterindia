@@ -158,7 +158,7 @@
                                            placeholder="Search Party / GSTN"
                                            data-target="bill_from_address_id"
                                            data-party-input="bill_from_party_id"
-                                           value="{{$billFromParty->party_trade_name}}-{{$billFromParty->party_gstn}}" readonly>
+                                           value="{{$billFromParty->party_trade_name}}-{{$billFromParty->party_gstn}}" >
 
                                     <input type="hidden"
                                            name="bill_from_party_id"
