@@ -15,7 +15,7 @@ class EwayBillController extends Controller
 {
     protected $masterIndiaService;
     protected $masterIndiaEwayBillTransaction;
-    protected $company_gstn = '05AAABB0639G1Z8';
+    protected $company_gstn = '05AAABC0181E1ZE';
     protected array $cancellationReasons;
     protected array $extensionReasons;
     protected array $vehicleReasons;
@@ -223,6 +223,7 @@ class EwayBillController extends Controller
             if ($order->billFromParty) {
                 $ewayBillData['gstin_of_consignor'] = $order->billFromParty->party_gstn;
                 $ewayBillData['legal_name_of_consignor'] = $order->billFromParty->party_legal_name;
+                $ewayBillData['state_of_consignor'] = strtoupper($order->billFromAddress->state);
             }
             //  Address of consignor i.e. Seller
             if (!empty($order->dispatchFromAddress->address_id)) {
@@ -230,8 +231,6 @@ class EwayBillController extends Controller
                 $ewayBillData['address2_of_consignor'] = $order->dispatchFromAddress->address_line;
                 $ewayBillData['place_of_consignor'] = strtoupper($order->dispatchFromAddress->city);
                 $ewayBillData['pincode_of_consignor'] = $order->dispatchFromAddress->pincode;
-
-                $ewayBillData['state_of_consignor'] = strtoupper($order->dispatchFromAddress->state);
                 $ewayBillData['actual_from_state_name'] = strtoupper($order->dispatchFromAddress->state);
 
             } else {
@@ -239,21 +238,19 @@ class EwayBillController extends Controller
                 $ewayBillData['address2_of_consignor'] = $order->billFromAddress->address_line;
                 $ewayBillData['place_of_consignor'] = strtoupper($order->billFromAddress->city);
                 $ewayBillData['pincode_of_consignor'] = $order->billFromAddress->pincode;
-                $ewayBillData['state_of_consignor'] = strtoupper($order->billFromAddress->state);
                 $ewayBillData['actual_from_state_name'] = strtoupper($order->billFromAddress->state);
             }
             // address of consignee i.e. purchaser/Buyer
             if ($order->billToParty) {
                 $ewayBillData['gstin_of_consignee'] = $order->billToParty->party_gstn;
                 $ewayBillData['legal_name_of_consignee'] = $order->billToParty->party_legal_name;
+                $ewayBillData['state_of_supply'] = strtoupper($order->billToAddress->state);
             }
             if (!empty($order->shipToAddress->address_id)) {
                 $ewayBillData['address1_of_consignee'] = $order->shipToAddress->address_line;
                 $ewayBillData['address2_of_consignee'] = $order->shipToAddress->address_line;
                 $ewayBillData['place_of_consignee'] = strtoupper($order->shipToAddress->city);
                 $ewayBillData['pincode_of_consignee'] = $order->shipToAddress->pincode;
-
-                $ewayBillData['state_of_supply'] = strtoupper($order->shipToAddress->state);
                 $ewayBillData['actual_to_state_name'] = strtoupper($order->shipToAddress->state);
 
             } else {
@@ -262,8 +259,6 @@ class EwayBillController extends Controller
                 $ewayBillData['address2_of_consignee'] = $order->billToAddress->address_line;
                 $ewayBillData['place_of_consignee'] = strtoupper($order->billToAddress->city);
                 $ewayBillData['pincode_of_consignee'] = $order->billToAddress->pincode;
-
-                $ewayBillData['state_of_supply'] = strtoupper($order->billToAddress->state);
                 $ewayBillData['actual_to_state_name'] = strtoupper($order->billToAddress->state);
             }
             $txnType= $this->resolveTransactionType($order);
@@ -295,6 +290,7 @@ class EwayBillController extends Controller
             } else {
 
                 $ewayBillData['transporter_id'] = $order->transporter_id;// GSTN of transporter
+                $ewayBillData['vehicle_number'] = $order->vehicle_no;
 
             }
 
@@ -831,7 +827,7 @@ class EwayBillController extends Controller
             return 2;
         }
 
-        if ($hasBillFrom && !$hasBillTo && !$hasShipTo && $hasDispatchFrom) {
+        if ($hasBillFrom && $hasBillTo && !$hasShipTo && $hasDispatchFrom) {
             // 3️⃣ Bill From – Dispatch From
             return 3;
         }

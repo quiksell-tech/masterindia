@@ -18,7 +18,7 @@ class EInvoiceController extends Controller
 {
     protected $masterIndiaService;
     protected $masterIndiaEInvoiceTransaction;
-    protected $company_gstn = '05AAABB0639G1Z8';
+    protected $company_gstn = '05AAAPG7885R002';
 
     public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEInvoiceTransaction $masterIndiaEInvoiceTransaction)
     {
@@ -98,56 +98,56 @@ class EInvoiceController extends Controller
             return response()->json(['status' => false, 'message' => 'Bill to Party Not Found', 'data' => []]);
         }
         // validate GSTN
-        if (!empty($order->billToParty->party_gstn)) {
+//        if (!empty($order->billToParty->party_gstn)) {
+//
+//            if ($order->supply_type == 'outward') {
+//                $valid = $this->masterIndiaService->getGSTINDetailsNew([
+//                    'buyer_gstin' => $order->billToParty->party_gstn,
+//                    'sell_invoice_ref_no' => $order->order_invoice_number,
+//                    'company_gstin' => $this->company_gstn,
+//                ]);
+//
+//            } else {
+//
+//                $valid = $this->masterIndiaService->getGSTINDetailsNew([
+//                    'buyer_gstin' => $order->billFromParty->party_gstn,
+//                    'sell_invoice_ref_no' => $this->company_gstn,
+//                    'company_gstin' => $this->company_gstn,
+//                ]);
+//            }
+//
+//
+//            if ($valid instanceof Response) {
+//                // update psos for error
+//                $message=json_decode($valid->getContent(), true)['message'] ?? '';
+//                $creditnote->update([
+//                    'credit_note_status' => 'E',
+//                    'credit_note_status_message' => $message,
+//                ]);
+//                return response()->json(['status' => false, 'message' => $message, 'data' => []]);
+//            }
+//
+//            if ($valid['gstin_status'] != 'active') {
+//
+//                // set error to skip this record for batch process
+//
+//                $order->update([
+//                    'credit_note_status' => 'E',
+//                    'credit_note_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
+//                ]);
+//                return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
+//
+//            }
+//
+//        }
 
-            if ($order->supply_type == 'outward') {
-                $valid = $this->masterIndiaService->getGSTINDetailsNew([
-                    'buyer_gstin' => $order->billToParty->party_gstn,
-                    'sell_invoice_ref_no' => $order->order_invoice_number,
-                    'company_gstin' => $this->company_gstn,
-                ]);
-
-            } else {
-
-                $valid = $this->masterIndiaService->getGSTINDetailsNew([
-                    'buyer_gstin' => $order->billFromParty->party_gstn,
-                    'sell_invoice_ref_no' => $this->company_gstn,
-                    'company_gstin' => $this->company_gstn,
-                ]);
-            }
-
-
-            if ($valid instanceof Response) {
-                // update psos for error
-                $message=json_decode($valid->getContent(), true)['message'] ?? '';
-                $creditnote->update([
-                    'credit_note_status' => 'E',
-                    'credit_note_status_message' => $message,
-                ]);
-                return response()->json(['status' => false, 'message' => $message, 'data' => []]);
-            }
-
-            if ($valid['gstin_status'] != 'active') {
-
-                // set error to skip this record for batch process
-
-                $order->update([
-                    'credit_note_status' => 'E',
-                    'credit_note_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
-                ]);
-                return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
-
-            }
-
-        }
-
-        if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+        if ($order->billFromAddress->state_code == $order->billToAddress->state_code) {
 
             $total_igst_value = 0;
-            $total_sgst_value = $order->total_tax / 2;
-            $total_cgst_value = $order->total_tax / 2;
+            $total_sgst_value = $creditnote->total_tax / 2;
+            $total_cgst_value = $creditnote->total_tax / 2;
         } else {
-            $total_igst_value = $order->total_tax;
+            $total_igst_value = $creditnote->total_tax;
             $total_sgst_value = 0;
             $total_cgst_value = 0;
         }
@@ -158,9 +158,11 @@ class EInvoiceController extends Controller
 
         foreach ($creditnote->items as $item) {
 
+
             $taxableAmount = $item->total_item_quantity * $item->price_per_unit;
             $taxAmount = ($taxableAmount * $item->tax_percentage) / 100;
             $afterTaxValue = $taxableAmount + $taxAmount;
+
 
             if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
 
@@ -243,19 +245,19 @@ class EInvoiceController extends Controller
             "reference_details" => [
 
                 "preceding_document_details" => [[
-                    "reference_of_original_invoice" => strtoupper($creditnote->creditnote_invoice_no),
-                    "preceding_invoice_date" => date('d/m/Y', strtotime($creditnote->credit_note_date)),
+                    "reference_of_original_invoice" => strtoupper($order->order_invoice_number),
+                    "preceding_invoice_date" => date('d/m/Y', strtotime($order->order_invoice_date)),
                     // "other_reference" => "2334"
                 ]],
 
             ],
 
             "value_details" => [
-                "total_assessable_value" => round($order->total_sale_value, 2),
+                "total_assessable_value" => round($creditnote->total_sale_value, 2),
                 "total_cgst_value" => round($total_cgst_value, 2),
                 "total_sgst_value" => round($total_sgst_value, 2),
                 "total_igst_value" => round($total_igst_value, 2),
-                "total_invoice_value" => round($order->total_after_tax, 2),
+                "total_invoice_value" => round($creditnote->total_after_tax, 2),
 
             ],
             "item_list" => $items_list
@@ -312,6 +314,7 @@ class EInvoiceController extends Controller
         $data=['creditnote_invoice_no'=>$creditnote->creditnote_invoice_no];
 
         $response = $this->masterIndiaService->generateCreditNote($data,$params);
+
         if ($response instanceof Response) {
             //update psos for failure
             $message=json_decode($response->getContent(), true)['message'] ?? '';
@@ -338,10 +341,10 @@ class EInvoiceController extends Controller
         $isRecordUpdated=$creditnote->update($updateData);
         if ($isRecordUpdated) {
 
-            return response()->json(['status' => true, 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
+            return response()->json(['status' => 'success', 'message' => 'Credit note has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
         }
 
-        return response()->json(['status' => false, 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
+        return response()->json(['status' => 'error', 'message' => 'Credit Note created but failed to save response', 'data' => []]);
 
     }
 
@@ -424,48 +427,48 @@ class EInvoiceController extends Controller
             return response()->json(['status' => false, 'message' => 'Eway Bill Is Not Created', 'data' => []]);
         }
         // validate GSTN
-        if (!empty($order->billToParty->party_gstn)) {
-
-            if ($order->supply_type == 'outward') {
-                $valid = $this->masterIndiaService->getGSTINDetailsNew([
-                    'buyer_gstin' => $order->billToParty->party_gstn,
-                    'sell_invoice_ref_no' => $order->order_invoice_number,
-                    'company_gstin' => $this->company_gstn,
-                ]);
-
-            } else {
-
-                $valid = $this->masterIndiaService->getGSTINDetailsNew([
-                    'buyer_gstin' => $order->billFromParty->party_gstn,
-                    'sell_invoice_ref_no' => $this->company_gstn,
-                    'company_gstin' => $this->company_gstn,
-                ]);
-            }
-
-
-            if ($valid instanceof Response) {
-                // update psos for error
-
-                $order->update([
-                    'irn_status' => 'E',
-                    'irn_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
-                ]);
-                return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
-            }
-
-            if ($valid['gstin_status'] != 'active') {
-
-                // set error to skip this record for batch process
-
-                $order->update([
-                    'irn_status' => 'E',
-                    'irn_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
-                ]);
-                return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
-
-            }
-
-        }
+//        if (!empty($order->billToParty->party_gstn)) {
+//
+//            if ($order->supply_type == 'outward') {
+//                $valid = $this->masterIndiaService->getGSTINDetailsNew([
+//                    'buyer_gstin' => $order->billToParty->party_gstn,
+//                    'sell_invoice_ref_no' => $order->order_invoice_number,
+//                    'company_gstin' => $this->company_gstn,
+//                ]);
+//
+//            } else {
+//
+//                $valid = $this->masterIndiaService->getGSTINDetailsNew([
+//                    'buyer_gstin' => $order->billFromParty->party_gstn,
+//                    'sell_invoice_ref_no' => $this->company_gstn,
+//                    'company_gstin' => $this->company_gstn,
+//                ]);
+//            }
+//
+//
+//            if ($valid instanceof Response) {
+//                // update psos for error
+//
+//                $order->update([
+//                    'irn_status' => 'E',
+//                    'irn_status_message' => json_decode($valid->getContent(), true)['message'] ?? ''
+//                ]);
+//                return response()->json(['status' => false, 'message' => $valid->getContent(), true['message'] ?? '', 'data' => []]);
+//            }
+//
+//            if ($valid['gstin_status'] != 'active') {
+//
+//                // set error to skip this record for batch process
+//
+//                $order->update([
+//                    'irn_status' => 'E',
+//                    'irn_status_message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown')
+//                ]);
+//                return response()->json(['status' => false, 'message' => 'GSTIN not active: ' . ($valid['gstin_status'] ?? 'unknown'), 'data' => []]);
+//
+//            }
+//
+//        }
 
         if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
 
@@ -527,7 +530,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" => '09AAAPG7885R002',//$this->company_gstn,
+            "user_gstin" => $this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",
@@ -672,10 +675,10 @@ class EInvoiceController extends Controller
                 'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? '')
             ]);
 
-            return response()->json(['status' => true, 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
+            return response()->json(['status' => 'success', 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
         }
 
-        return response()->json(['status' => false, 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
+        return response()->json(['status' => 'error', 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
     }
 
     public function insertCreditNoteData(Request $request, $order_id)

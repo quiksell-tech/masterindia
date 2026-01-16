@@ -31,8 +31,8 @@ class OrderController extends Controller
     public function create()
     {
         $transporters = MiTransporter::orderBy('name', 'desc')->get();
-        $billFromAddress=MiCompanyAddress::where('address_id','3')->first();
-        $billFromParty=MiParty::where('party_id','4')->first();
+        $billFromAddress=MiCompanyAddress::where('address_id','1')->first();
+        $billFromParty=MiParty::where('party_id','1')->first();
 
         // Get latest order_invoice_date
         $latestDate = MiOrder::max('order_invoice_date');

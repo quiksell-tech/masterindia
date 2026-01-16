@@ -43,7 +43,7 @@
             <table width="100%" cellspacing="0" cellpadding="4">
                 <tr>
                     <td width="45%" align="right">
-                        <strong>Invoice No:</strong>
+                        <strong>Credit Note No:</strong>
                     </td>
                     <td width="55%" align="left">
                         {{ $creditnote->creditnote_invoice_no }}
@@ -52,7 +52,7 @@
 
                 <tr>
                     <td align="right">
-                        <strong>Date:</strong>
+                        <strong>Credit Note Date:</strong>
                     </td>
                     <td align="left">
                         {{ \Carbon\Carbon::parse($creditnote->credit_note_date)->format('d-M-Y') }}
@@ -61,47 +61,23 @@
 
                 <tr>
                     <td align="right">
-                        <strong>Transporter:</strong>
+                        <strong>Org. Invoice No:</strong>
                     </td>
                     <td align="left">
-                        {{ $order->transporter_name }}
+                        {{ $order->order_invoice_number }}
                     </td>
                 </tr>
 
                 <tr>
                     <td align="right">
-                        <strong>Vehicle No:</strong>
+                        <strong>Org. Invoice Date:</strong>
                     </td>
                     <td align="left">
-                        {{ $order->vehicle_no }}
+
+                        {{ \Carbon\Carbon::parse($order->order_invoice_date)->format('d-M-Y') }}
                     </td>
                 </tr>
 
-                <tr>
-                    <td align="right" style="font-size: 12px">
-                        <strong>Transport Doc No:</strong>
-                    </td>
-                    <td align="left">
-                        {{ $order->transporter_document_no }}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td align="right" style="font-size: 12px">
-                        <strong>Transport Doc. Date:</strong>
-                    </td>
-                    <td align="left">
-                        {{ \Carbon\Carbon::parse($order->transportation_date)->format('d-M-Y') }}
-                    </td>
-                </tr>
-                <tr>
-                    <td align="right" style="font-size: 12px">
-                        <strong>Eway No:</strong>
-                    </td>
-                    <td align="left">
-                        {{ $order->eway_bill_no ?? '' }}
-                    </td>
-                </tr>
             </table>
         </td>
     </tr>
@@ -236,11 +212,11 @@
 <table>
     <tr>
         <td class="right"><strong>Total Tax(@18%):</strong></td>
-        <td class="right">{{ number_format($order->total_tax, 2) }}</td>
+        <td class="right">{{ number_format($creditnote->total_tax, 2) }}</td>
     </tr>
     <tr>
         <td class="right"><strong>Total Value:</strong></td>
-        <td class="right">{{ number_format($order->total_after_tax, 2) }}</td>
+        <td class="right">{{ number_format($creditnote->total_after_tax, 2) }}</td>
     </tr>
 </table>
 <table>
@@ -260,25 +236,25 @@
         <tr>
             <td>-</td>
 
-            <td>{{ number_format($order->total_tax/2, 2) }}</td>
-            <td>{{ number_format($order->total_tax/2, 2) }}</td>
+            <td>{{ number_format($creditnote->total_tax/2, 2) }}</td>
+            <td>{{ number_format($creditnote->total_tax/2, 2) }}</td>
             <td>0</td>
-            <td>{{ number_format($order->total_tax, 2) }}</td>
+            <td>{{ number_format($creditnote->total_tax, 2) }}</td>
         </tr>
     @else
         <tr>
             <td>-</td>
             <td>0</td>
             <td>0</td>
-            <td>{{ number_format($order->total_tax, 2) }}</td>
-            <td>{{ number_format($order->total_tax, 2) }}</td>
+            <td>{{ number_format($creditnote->total_tax, 2) }}</td>
+            <td>{{ number_format($creditnote->total_tax, 2) }}</td>
         </tr>
     @endif
 
     </tbody>
 </table>
 
-<p><strong>Amount in Words:</strong> {{ ucfirst(\NumberFormatter::create('en_IN', NumberFormatter::SPELLOUT)->format($order->total_after_tax)) }} Rupees Only</p>
+<p><strong>Amount in Words:</strong> {{ ucfirst(\NumberFormatter::create('en_IN', NumberFormatter::SPELLOUT)->format($creditnote->total_after_tax)) }} Rupees Only</p>
 
 <hr>
 <p style="text-align: right;">
