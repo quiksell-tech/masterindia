@@ -88,7 +88,7 @@ Route::middleware('admin.auth')->group(function () {
 
         // AJAX
         Route::get('/party-search', [OrderController::class, 'searchParty'])->name('party.search');
-        Route::get('/company-addresses/{companyId}', [OrderController::class, 'companyAddresses']);
+        Route::get('/company-addresses/{companyId}/{partyId}', [OrderController::class, 'companyAddresses']);
     });
 
     Route::prefix('transporters')->group(function () {

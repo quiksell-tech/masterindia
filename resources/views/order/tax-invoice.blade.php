@@ -278,12 +278,12 @@
     </tbody>
 </table>
 
-<p><strong>Amount in Words:</strong> {{ ucfirst(\NumberFormatter::create('en_IN', NumberFormatter::SPELLOUT)->format($order->total_after_tax)) }} Rupees Only</p>
+<p><strong>Amount in Words:</strong> {{ ucfirst($amountWords) }}</p>
 
 <hr>
-<p style="text-align: right;">
-    <img src="{{ public_path('images/sign.jpeg') }}" width="150">
-</p>
+{{--<p style="text-align: right;">--}}
+{{--    <img src="{{ public_path('images/sign.jpeg') }}" width="150">--}}
+{{--</p>--}}
 
 <p style="text-align:center;">
     This is a computer generated invoice and does not require signature.

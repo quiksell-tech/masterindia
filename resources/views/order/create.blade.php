@@ -398,7 +398,7 @@
                 $('.party-list').remove();
 
                 // load addresses by company
-                loadCompanyAddressesByCompany(companyId, targetSelect);
+                loadCompanyAddressesByCompany(companyId,partyId, targetSelect);
             });
 
             // Close dropdown
@@ -411,13 +411,13 @@
         });
 
         // 📌 Load addresses by company
-        function loadCompanyAddressesByCompany(companyId, targetSelectId) {
+        function loadCompanyAddressesByCompany(companyId,partyId, targetSelectId) {
 
             let select = $('#' + targetSelectId);
             select.html('<option>Loading...</option>');
 
             $.ajax({
-                url: `/orders/company-addresses/${companyId}`,
+                url: `/orders/company-addresses/${companyId}/${partyId}`,
                 type: 'GET',
                 success: function (data) {
 

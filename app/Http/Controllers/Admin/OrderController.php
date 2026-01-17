@@ -11,6 +11,7 @@ use App\Models\Admin\MiParty;
 use App\Models\Admin\MiTransporter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 
@@ -367,13 +368,15 @@ class OrderController extends Controller
                 'party_id',
                 'company_id',
                 'party_trade_name',
-                'party_gstn'
+                'party_gstn',
+                DB::raw('SUBSTRING(party_gstn, 1, 2) as state_code')
             ]);
     }
 
-    public function companyAddresses($companyId)
+    public function companyAddresses($companyId,$partyId)
     {
         return MiCompanyAddress::where('company_id', $companyId)
+            ->where('party_id', $partyId)
             ->where('is_active','Y')->get(['address_id', 'address_line', 'city', 'state', 'pincode','party_id']);
     }
     protected function renderAddress(

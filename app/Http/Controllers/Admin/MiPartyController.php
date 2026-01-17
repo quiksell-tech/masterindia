@@ -32,8 +32,8 @@ class MiPartyController extends Controller
             'party_legal_name'  => ['required', 'string', 'max:255'],
             'contact_name'      => ['required', 'string', 'max:255'],
             'name'              => ['required', 'string', 'max:50'],
-            'phone'             => ['required', 'digits:10'],
-            'email'             => ['required', 'email', 'max:255'],
+//            'phone'             => ['required', 'digits:10'],
+//            'email'             => ['required', 'email', 'max:255'],
             'party_gstn'        => ['required', 'string', 'size:15'],
             'is_active'         => ['required', 'in:Y,N'],
         ]);
@@ -68,8 +68,8 @@ class MiPartyController extends Controller
             'party_trade_name' => 'required',
             'party_legal_name' => 'required',
             'name'              => ['required', 'string', 'max:50'],
-            'phone'             => ['required', 'digits:10'],
-            'email'             => ['required', 'email', 'max:255'],
+//            'phone'             => ['required', 'digits:10'],
+//            'email'             => ['required', 'email', 'max:255'],
             'contact_name' => 'required',
             'is_active'        => 'required|in:Y,N',
         ]);

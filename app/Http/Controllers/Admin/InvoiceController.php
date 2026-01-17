@@ -7,6 +7,7 @@ use App\Models\Admin\MiOrder;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\MiCreditnoteTransaction;
 use App\Models\Admin\MiCreditnoteItem;
+use \NumberFormatter;
 class InvoiceController extends Controller
 {
     public function generate($orderId)
@@ -22,8 +23,8 @@ class InvoiceController extends Controller
             'dispatchFromParty',
             'dispatchFromAddress',
         ])->findOrFail($orderId);
-
-        $pdf = Pdf::loadView('order.tax-invoice', compact('order'))
+        $amountWords=$this-> amount_in_words_pdf($order->total_after_tax);
+        $pdf = Pdf::loadView('order.tax-invoice', compact('order', 'amountWords'))
             ->setPaper('A4', 'portrait');
 
         return $pdf->download('Invoice-'.$order->order_invoice_number.'.pdf');
@@ -46,12 +47,37 @@ class InvoiceController extends Controller
             'dispatchFromParty',
             'dispatchFromAddress',
         ])->findOrFail($creditnote->order_id);
-
-        $pdf = Pdf::loadView('creditnote.creditnote-tax-invoice', compact('order', 'creditnote'))
+        $amountWords=$this-> amount_in_words_pdf($creditnote->total_after_tax);
+        $pdf = Pdf::loadView('creditnote.creditnote-tax-invoice', compact('order', 'creditnote', 'amountWords'))
             ->setPaper('A4', 'portrait');
 
         return $pdf->download('Invoice-'.$creditnote->creditnote_invoice_no.'.pdf');
         // OR ->stream() to preview in browser
+    }
+
+
+    function amount_in_words_pdf($amount)
+    {
+        $amount = number_format((float)$amount, 2, '.', '');
+
+        $rupees = (int) $amount;
+        $paise  = (int) round(($amount - $rupees) * 100);
+
+        $formatter = new NumberFormatter('en_IN', NumberFormatter::SPELLOUT);
+
+        $rupeesWords = ucwords(strtolower($formatter->format($rupees)));
+        $rupeesWords = str_replace('-', ' ', $rupeesWords);
+
+        $words = 'Rupees ' . $rupeesWords;
+
+        if ($paise > 0) {
+            $paiseWords = ucwords(strtolower($formatter->format($paise)));
+            $paiseWords = str_replace('-', ' ', $paiseWords);
+
+            $words .= ' and ' . $paiseWords . ' Paise';
+        }
+
+        return $words . ' Only';
     }
 
 }
