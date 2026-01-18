@@ -128,7 +128,7 @@
             {{ $order->billToAddress->city }},
             {{ $order->billToAddress->state }} - {{ $order->billToAddress->pincode }}<br>
             <strong>Place of Supply:</strong> {{ $order->billToAddress->state }}<br>
-            <strong>Place of Supply:</strong> {{ $order->billToAddress->state_code }}
+{{--            <strong>Place of Supply:</strong> {{ $order->billToAddress->state_code }}--}}
         </td>
         <td>
             @if(!empty($order->shipToParty->ship_to_party_id))
@@ -143,7 +143,7 @@
                 {{ $order->shipToAddress->city }},
                 {{ $order->shipToAddress->state }} - {{ $order->shipToAddress->pincode }}<br>
                 <strong>Place of Supply:</strong> {{ $order->shipToAddress->state }}<br>
-                <strong>Place of Supply:</strong> {{ $order->shipToAddress->state_code }}
+{{--                <strong>Place of Supply:</strong> {{ $order->shipToAddress->state_code }}--}}
             @else
                 <strong>Name:</strong> {{ $order->billToParty->party_trade_name }}<br>
 {{--                <strong>Mobile:</strong> {{ $order->billToParty->phone }}<br>--}}
@@ -155,7 +155,7 @@
                 {{ $order->billToAddress->city }},
                 {{ $order->billToAddress->state }} - {{ $order->billToAddress->pincode }}<br>
                 <strong>Place of Supply:</strong> {{ $order->billToAddress->state }}<br>
-                <strong>Place of Supply:</strong> {{ $order->billToAddress->state_code }}
+{{--                <strong>Place of Supply:</strong> {{ $order->billToAddress->state_code }}--}}
             @endif
 
         </td>
@@ -176,7 +176,7 @@
                 {{ $order->dispatchFromAddress->city }},
                 {{ $order->dispatchFromAddress->state }} - {{ $order->dispatchFromAddress->pincode }}<br>
                 <strong>Place of Supply:</strong> {{ $order->dispatchFromAddress->state }}<br>
-                <strong>Place of Supply:</strong> {{ $order->dispatchFromAddress->state_code }}
+{{--                <strong>Place of Supply:</strong> {{ $order->dispatchFromAddress->state_code }}--}}
             </td>
         </tr>
             @else

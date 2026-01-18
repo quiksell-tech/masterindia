@@ -80,14 +80,25 @@
                                         <button type="button"
                                                 class="btn btn-sm btn-info"
                                                 onclick="getInvoiceData({{ $order->order_id }})">
-                                            <i class="fas fa-file-invoice"></i> Invoice
+                                            <i class="fas fa-file-invoice"></i> view
                                         </button>
-                                    </td>
-                                    <td>
+
                                     <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
                                        class="btn btn-sm btn-danger">
-                                        <i class="fas fa-file-pdf"></i> Invoice PDF
+                                        <i class="fas fa-file-pdf"></i> Tax PDF
                                     </a>
+                                        @if(!empty($order->einvoice_pdf_url))
+                                            <a href="{{ $order->einvoice_pdf_url }}" class="btn btn-sm btn-danger" target="_blank">
+                                                <i class="fas fa-file-pdf"></i> E-Invoice PDF
+                                            </a>
+                                        @endif
+
+                                    @if(!empty($order->eway_bill_pdf_url))
+                                            <a href="https://{{ $order->eway_bill_pdf_url }}" class="btn btn-sm btn-danger" target="_blank">
+                                                <i class="fas fa-file-pdf"></i> E-Way Bill PDF
+                                            </a>
+                                        @endif
+
                                     </td>
 
                         </tr>
@@ -219,9 +230,6 @@
                         Cancel
                     </button>
 
-                    <a href="#" id="generateInvoiceBtn" class="btn btn-success">
-                        <i class="fas fa-file-pdf mr-1"></i> Generate Invoice
-                    </a>
                 </div>
 
             </div>

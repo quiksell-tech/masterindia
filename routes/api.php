@@ -26,9 +26,14 @@ Route::post(
 
 // Einvoice
 Route::post(
-    'einvoce/{order_id}/creditnote',
+    'einvoce/{order_id}/creditnote-generate',
     [EInvoiceController::class, 'generateCreditNote']
-)->name('einvoce.creditnote');
+)->name('einvoce.creditnote.generate');
+
+Route::post(
+    'einvoce/{order_id}/creditnote-cancel',
+    [EInvoiceController::class, 'cancelCreditNote']
+)->name('einvoce.creditnote.cancel');
 
 Route::post(
     'einvoce/{order_id}/cancel',

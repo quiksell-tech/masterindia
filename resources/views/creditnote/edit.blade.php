@@ -16,11 +16,6 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label>E-Invoice No</label>
-                    <input type="text" class="form-control" value="{{ $creditnote->einvoice_no }}" readonly>
-                </div>
-
-                <div class="col-md-4">
                     <label>Invoice No</label>
                     <input type="text" class="form-control" value="{{ $creditnote->order_invoice_number }}" readonly>
                 </div>
@@ -141,7 +136,7 @@
                                     {{ $item->item_name }}
                                     <input type="hidden" name="items[{{ $index }}][item_name]" value="{{ $item->item_name }}">
                                     <input type="hidden" name="items[{{ $index }}][item_id]" value="{{ $item->item_id }}">
-                                    <input type="hidden" class="tax_percentage" value="{{ $item->tax_percentage }}">
+                                    <input type="hidden" name="items[{{ $index }}][tax_percentage]" value="{{ $item->tax_percentage }}">
                                 </td>
 
                                 <td>

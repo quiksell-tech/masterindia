@@ -14,7 +14,7 @@ class MiCreditnoteTransaction extends Model
     protected $primaryKey = 'creditnote_id';
 
     public $timestamps = true;
-
+    protected $appends=['total_sale_value','total_tax','total_after_tax'];
     protected $fillable = [
         'creditnote_invoice_no',
         'order_invoice_number',
@@ -25,7 +25,6 @@ class MiCreditnoteTransaction extends Model
         'gst_invoice_no',
         'return_type',
         'return_date',
-        'einvoice_no',
         'financial_year',
         'sequence_no',
         'creditnote_pdf_url',
@@ -33,7 +32,6 @@ class MiCreditnoteTransaction extends Model
         'ack_no',
         'creditnote_irn_no',
         'qrcode_url',
-        'einvoice_pdf_url',
         'status_received',
         'alert_message',
         'request_id',
@@ -107,7 +105,7 @@ class MiCreditnoteTransaction extends Model
         $fy = self::getFinancialYearCode();
 
         $lastSequence = self::where('financial_year', $fy)
-            ->max('creditnote_invoice_no');
+            ->max('sequence_no');
         $lastSequence=intval($lastSequence);
         $nextSequence = $lastSequence ? $lastSequence + 1 : 1;
 

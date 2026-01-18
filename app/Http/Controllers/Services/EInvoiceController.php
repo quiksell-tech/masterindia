@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin\MiOrderItem;
 use App\Models\MasterIndiaEInvoiceTransaction;
 use App\Models\MiCreditnoteTransaction;
+use App\Models\SystemParameter;
 use App\Services\EInvoice\MasterIndiaService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -19,13 +20,18 @@ class EInvoiceController extends Controller
     protected $masterIndiaService;
     protected $masterIndiaEInvoiceTransaction;
    // protected $company_gstn = '05AAAPG7885R002'; by IShan
-    protected $company_gstn = '05AAABC0181E1ZE';
+    protected $company_gstn ;
+    protected $EINVOICE_COMPANY_GSTN;
 
     public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEInvoiceTransaction $masterIndiaEInvoiceTransaction)
     {
 
         $this->masterIndiaService = $masterIndiaService;
         $this->masterIndiaEInvoiceTransaction = $masterIndiaEInvoiceTransaction;
+        $sysParameter=SystemParameter::getSystemParametersByName('EINVOICE_TEST_USER_GSTN');
+        $this->company_gstn=$sysParameter['EINVOICE_TEST_USER_GSTN'];
+        $sysParameter=SystemParameter::getSystemParametersByName('EINVOICE_COMPANY_GSTN');
+        $this->EINVOICE_COMPANY_GSTN=$sysParameter['EINVOICE_COMPANY_GSTN'];
 
     }
 
@@ -106,7 +112,8 @@ class EInvoiceController extends Controller
                 $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billToParty->party_gstn,
                     'sell_invoice_ref_no' => $order->order_invoice_number,
-                    'company_gstin' => $this->company_gstn,
+                  //  'company_gstin' => $this->company_gstn,
+                    'company_gstin' => $this->EINVOICE_COMPANY_GSTN,
                 ]);
 
             } else {
@@ -114,7 +121,8 @@ class EInvoiceController extends Controller
                 $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billFromParty->party_gstn,
                     'sell_invoice_ref_no' => $this->company_gstn,
-                    'company_gstin' => $this->company_gstn,
+                   // 'company_gstin' => $this->company_gstn,
+                    'company_gstin' => $this->EINVOICE_COMPANY_GSTN,
                 ]);
             }
 
@@ -205,7 +213,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" =>'09AAAPG7885R002',// $this->company_gstn,
+            "user_gstin" =>$this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",
@@ -338,6 +346,7 @@ class EInvoiceController extends Controller
             'status_received' => $response['message']['Status'],
             'alert_message' => $response['message']['alert'],
             'request_id' => $response['requestId'],
+            'credit_note_status_message' => 'Credit note has been created',
             'credit_note_status' => 'C'
         ];
 
@@ -364,7 +373,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" =>'09AAAPG7885R002',// $this->company_gstn,
+            "user_gstin" =>$this->company_gstn,
             "irn" => $order->irn_no,
             "cancel_reason" => $request->cancel_reason,
             "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
@@ -372,26 +381,61 @@ class EInvoiceController extends Controller
 
         $data=['order_invoice_number'=>$order->order_invoice_number];
         $response = $this->masterIndiaService->cancelEInvoice($data,$params);
+        if ($response instanceof Response) {
+            //update psos for failure
+            $message=json_decode($response->getContent(), true)['message'] ?? '';
+            $order->update(
+                [
+                    'credit_note_status' => 'E',
+                    'credit_note_status_message' => $message,
+                ]);
+            return response()->json(['status' => 'error', 'message' => $message, 'data' => []]);
+        }
+        $order->update([
+            'irn_status' => 'X',
+            'irn_status_message' => 'E-invoice has been cancelled ' . ($response['display_message'] ?? '')
+        ]);
+        return response()->json(['status' => 'success', 'message' => 'E-invoice has been cancelled', 'data' => []]);
 
-        $isUpdated = $this->masterIndiaEInvoiceTransaction
-            ->where('order_id', $order->order_id)
-            ->update([
-                'invoice_status'       => 'C',
-                'cancellation_reason'  => $params['cancel_reason'],
-                'cancellation_remarks' => $params['cancel_remarks'],
-                'status_received'      => 'CNL',
-            ]);
+    }
 
-        if ($isUpdated) {
-            $order->update([
-                'irn_status' => 'X',
-                'irn_status_message' => 'E-invoice has been cancelled ' . ($response['display_message'] ?? '')
-            ]);
-            return response()->json(['status' => 'success', 'message' => 'E-invoice has been cancelled', 'data' => []]);
+    public function cancelCreditNote(Request $request, $creditnoteId)
+    {
+        if(empty($request->cancel_reason))
+        {
+            return response()->json(['status' => 'error', 'message' => 'Select cancel reason', 'data' => []]);
+        }
+        $order = MiCreditnoteItem::where('order_id', $creditnoteId)->first();
+        if (empty($order)) {
+
+            return response()->json(['status' => 'error', 'message' => 'Credit note is not found', 'data' => []]);
         }
 
-        return response()->json(['status' => 'error', 'message' => 'Invoice cancelled but failed to save response', 'data' => []]);
+        $params = [
 
+            "user_gstin" =>$this->company_gstn,
+            "irn" => $order->irn_no,
+            "cancel_reason" => $request->cancel_reason,
+            "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
+        ];
+
+        $data=['order_invoice_number'=>$order->creditnote_invoice_no];
+        $response = $this->masterIndiaService->cancelEInvoice($data,$params);
+        if ($response instanceof Response) {
+            //update psos for failure
+            $message=json_decode($response->getContent(), true)['message'] ?? '';
+            $order->update(
+                [
+                    'credit_note_status' => 'E',
+                    'credit_note_status_message' => $message,
+                ]);
+            return response()->json(['status' => 'error', 'message' => $message, 'data' => []]);
+        }
+        $order->update([
+            'credit_note_status' => 'X',
+            'credit_note_status_message' => 'E-invoice has been cancelled ' . ($response['display_message'] ?? '')
+        ]);
+        return response()->json(['status' => 'success', 'message' => 'Credit Note has been cancelled', 'data' => []]);
 
     }
 
@@ -442,7 +486,7 @@ class EInvoiceController extends Controller
                 $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billToParty->party_gstn,
                     'sell_invoice_ref_no' => $order->order_invoice_number,
-                    'company_gstin' => $this->company_gstn,
+                    'company_gstin' => $this->EINVOICE_COMPANY_GSTN,
                 ]);
 
             } else {
@@ -450,7 +494,7 @@ class EInvoiceController extends Controller
                 $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billFromParty->party_gstn,
                     'sell_invoice_ref_no' => $this->company_gstn,
-                    'company_gstin' => $this->company_gstn,
+                    'company_gstin' => $this->EINVOICE_COMPANY_GSTN,
                 ]);
             }
 
@@ -539,7 +583,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" =>'09AAAPG7885R002',// $this->company_gstn,
+            "user_gstin" =>$this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",
@@ -680,6 +724,7 @@ class EInvoiceController extends Controller
         if ($isRecordCreated) {
             $order->update([
                 'irn_no' => $response['message']['Irn'],
+                'einvoice_pdf_url' => $response['message']['EinvoicePdf'],
                 'irn_status' => 'C',
                 'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? '')
             ]);
@@ -738,13 +783,13 @@ class EInvoiceController extends Controller
         if (!$creditnote) {
 
             $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumber('CREW');
+
             $creditnote = MiCreditnoteTransaction::create([
                 'creditnote_invoice_no'  => $creditnoteInvoice['invoice_no'],
                 'financial_year'  => $creditnoteInvoice['financial_year'],
                 'sequence_no'  => $creditnoteInvoice['sequence_no'],
                 'order_id'            => $order_id,
                 'order_invoice_number' => $order->order_invoice_number,
-                'einvoice_no'           => $order->irn_no,
                 'credit_note_status'  => 'N',
                 'return_type'  => 'SALES_RETURN',
                 'credit_note_date'    => now(),

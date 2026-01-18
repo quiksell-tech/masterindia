@@ -448,7 +448,7 @@
                                 @if($order->eway_status == 'C') bg-success
                                 @elseif($order->eway_status == 'E') bg-danger
                                 @elseif($order->eway_status == 'X') bg-secondary
-                                @else badge-warning
+                                @else bg-warning
                                 @endif
                                 ">
                                 @if($order->eway_status == 'C')
@@ -458,7 +458,7 @@
                                 @elseif($order->eway_status == 'X')
                                     CANCELLED
                                 @else
-                                    NA
+                                    NEW
                                 @endif
                              </span>
 
@@ -484,7 +484,7 @@
                                 <i class="fas fa-road"></i> Generate E-WayBill
                             </a>
                             @endif
-
+                            @if($order->eway_status == 'C')
                             <a href="javascript:void(0)"
                                class="btn btn-sm btn-info"  onclick="openCancelEwayBillModal('{{$order->order_id}}')">
                                 <i class="fas fa-file-invoice"></i> Cancel E-WayBill
@@ -493,6 +493,7 @@
                                class="btn btn-sm btn-info" onclick="openUpdateEwayBillModal('{{$order->order_id}}')">
                                 <i class="fas fa-file-invoice"></i> Update E-WayBill
                             </a>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -510,7 +511,7 @@
                                 @if($order->irn_status == 'C') bg-success
                                 @elseif($order->irn_status == 'E') bg-danger
                                 @elseif($order->irn_status == 'X') bg-secondary
-                                @else badge-warning
+                                @else bg-warning
                                 @endif
                                 ">
                                 @if($order->irn_status == 'C')
@@ -520,7 +521,7 @@
                                 @elseif($order->irn_status == 'X')
                                     CANCELLED
                                 @else
-                                    NA
+                                    NEW
                                 @endif
                              </span>
 
@@ -537,23 +538,26 @@
 
                     <div class="card-body py-2">
                         <div class="d-flex justify-content-end gap-2">
-
+                            @if($order->irn_status != 'C')
                             <a href="javascript:void(0)"
                                class="btn btn-sm btn-warning"
                                onclick="createEInvoice({{$order->order_id}})">
                                 <i class="fas fa-road"></i> Generate E-Invoice
                             </a>
-                            <a href="javascript:void(0)"
-                               class="btn btn-sm btn-warning"
-                               onclick="createEInvoiceCreditNote({{$order->order_id}})">
-                                <i class="fas fa-road"></i> Generate Credit Note
-                            </a>
+                            @endif
+                            @if($order->irn_status == 'C')
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-warning"
+                                   onclick="createEInvoiceCreditNote({{$order->order_id}})">
+                                    <i class="fas fa-road"></i> Generate Credit Note
+                                </a>
 
-                            <a href="javascript:void(0)"
-                               class="btn btn-sm btn-info"
-                               onclick="openCancelEInvoiceModal('{{ $order->order_id }}')">
-                                <i class="fas fa-file-invoice"></i> Cancel E-Invoice
-                            </a>
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-info"
+                                   onclick="openCancelEInvoiceModal('{{ $order->order_id }}')">
+                                    <i class="fas fa-file-invoice"></i> Cancel E-Invoice
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </div>

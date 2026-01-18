@@ -21,13 +21,12 @@
                     <tr>
                         <th style="width: 80px">ID</th>
                         <th>Credit Note No.</th>
-                        <th>Qty.</th>
+                        <th>Items.</th>
                         <th>Total Sale</th>
                         <th>Total Tax</th>
                         <th>Total After Tax</th>
                         <th>credit_note_date</th>
                         <th>Invocie No</th>
-                        <th>IRN</th>
                         <th>Edit</th>
                         <th colspan="2" class="text-center" style="width: 100px;">Action</th>
                     </tr>
@@ -66,10 +65,6 @@
                             </td>
 
                             <td>
-                                <strong>{{ $order->einvoice_no }}</strong>
-                            </td>
-
-                            <td>
                                 <a href="{{ route('creditnote.edit', $order->creditnote_id) }}"
                                    class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i>
@@ -80,11 +75,23 @@
                                    class="btn btn-sm btn-danger">
                                     <i class="fas fa-file-pdf"></i> Invoice PDF
                                 </a>
+                                @if($order->credit_note_status!='C')
                                 <a href="javascript:void(0)"
                                    class="btn btn-sm btn-warning"
                                    onclick="createCreditNote('{{ $order->creditnote_id }}')">
-                                    <i class="fas fa-road"></i> Generate Credit
+                                    <i class="fas fa-road"></i> Generate CreditNote
                                 </a>
+                                @endif
+                                @if($order->credit_note_status=='C')
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-warning"
+                                   onclick="cancelCreditNote('{{ $order->creditnote_id }}')">
+                                    <i class="fas fa-road"></i> Cancel CreditNote
+                                </a>
+                                    <a href="{{ $order->creditnote_pdf_url }}" target="_blank">
+                                    <i class="fas fa-road"></i>pdf
+                                </a>
+                                @endif
                             </td>
 
 
@@ -217,9 +224,7 @@
                         Cancel
                     </button>
 
-                    <a href="#" id="generateInvoiceBtn" class="btn btn-success">
-                        <i class="fas fa-file-pdf mr-1"></i> Generate Invoice
-                    </a>
+
                 </div>
 
             </div>
@@ -234,7 +239,36 @@
         function createCreditNote(orderId)
         {
             $.ajax({
-                url: "<?php echo e(url('api/einvoce')); ?>/" + orderId + "/creditnote",
+                url: "<?php echo e(url('api/einvoce')); ?>/" + orderId + "/creditnote-generate",
+                type: "POST",
+
+                success: function (response) {
+
+                    if (response.status === 'success') {
+
+                        showAjaxResponse(response, 'Credit Note Created');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+
+                    }else {
+
+                        showAjaxResponse(response, 'Credit Note Failed');
+                    }
+                },
+                error: function (xhr) {
+                    showAjaxResponse({
+                        status: 'error',
+                        message: xhr.responseJSON?.message || 'Something went wrong'
+                    }, 'Action Failed');
+                }
+            });
+        }
+
+        function cancelCreditNote(orderId)
+        {
+            $.ajax({
+                url: "<?php echo e(url('api/einvoce')); ?>/" + orderId + "/creditnote-cancel",
                 type: "POST",
 
                 success: function (response) {

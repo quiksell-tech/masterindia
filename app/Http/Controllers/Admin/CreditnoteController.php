@@ -90,7 +90,6 @@ class CreditnoteController extends Controller
 
             MiCreditnoteItem::insert($items);
 
-
         return redirect()
             ->route('creditnote.index')
             ->with('success', 'Credit note updated successfully');

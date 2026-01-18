@@ -19,10 +19,10 @@ class SystemParameter extends Model
         'updated_at',
     ];
 
-    public static function getSystemParametersByProviderKV(string $provider)
+    public static function getSystemParametersByName(string $name)
     {
         return self::query()
-            ->where('sysprm_provider', $provider)
+            ->where('sysprm_name', $name)
             ->where('current_flag', 'Y')
             ->pluck('sysprm_value', 'sysprm_name');
     }

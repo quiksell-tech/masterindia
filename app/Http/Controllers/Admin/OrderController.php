@@ -60,7 +60,7 @@ class OrderController extends Controller
 
         $rules = [
             'transporter_id'     => ['required', 'string'],
-            'order_invoice_date'     => ['required', 'string'],
+            'order_invoice_date' => ['required', 'date', 'before_or_equal:today'],
             'bill_from_party_id'   => ['required', 'integer'],
             'bill_from_address_id' => ['required', 'integer'],
             'bill_to_party_id'     => ['required', 'integer'],

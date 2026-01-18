@@ -26,7 +26,7 @@ class OrderItemController extends Controller
             foreach ($request->items as $item) {
 
                 // skip empty rows
-                if (empty($item['item_id'])) {
+                if (empty($item['item_id']) || empty($item['price_per_unit']) || empty($item['total_item_quantity'])) {
                     continue;
                 }
                 $itemData = MiItem::select(

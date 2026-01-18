@@ -278,7 +278,7 @@ class MasterIndiaService
         ];
 
 
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'update_validity', $data['sell_invoice_ref_no']);
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'update_validity', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);
