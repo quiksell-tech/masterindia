@@ -1278,14 +1278,14 @@
 
                     if (response.status === 'success') {
 
-                        showAjaxResponse(response, 'E-Way Bill Created');
+                        showAjaxResponse(response, 'E-Invoice Action');
                         setTimeout(() => {
                             location.reload();
                         }, 1500);
 
                     }else {
 
-                        showAjaxResponse(response, 'E-Way Bill Creation Failed');
+                        showAjaxResponse(response, 'E-Invoice Action');
                     }
                 },
                 error: function (xhr) {
