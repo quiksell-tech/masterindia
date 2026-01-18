@@ -276,13 +276,14 @@ class EwayBillController extends Controller
                 // No  Transporter Detail
                 return response()->json(['status' => 'error', 'message' => 'Update Transporter Detail', 'data' => []]);
             }
-            // check  no documet case
-            if ($order->transporter_name == 'NO_GSTN') {
+            if(empty($order->vehicle_no))
+            {
+                return response()->json(['status' => 'error', 'message' => 'Vehicle Number is required', 'data' => []]);
+            }
+            // check self Pickup Of transporter
+            if ($order->transporter_id == 'NO_GSTN') {
                 // Self Pickup
-                if(empty($order->vehicle_no))
-                {
-                    return response()->json(['status' => 'error', 'message' => 'Vehicle Number is required', 'data' => []]);
-                }
+
                 $ewayBillData['transportation_mode'] = $order->transportation_mode;
                 $ewayBillData['vehicle_number'] = $order->vehicle_no;
                 $ewayBillData['vehicle_type'] = $order->vehicle_type;
@@ -406,7 +407,7 @@ class EwayBillController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
         }
 
-        if (empty( $order->eway_bill_no) || $order->eway_status != 'N') {
+        if (empty( $order->eway_bill_no) || $order->eway_status != 'C') {
 
             return response()->json(['status' => 'error', 'message' => 'E-waybill No is required OR It has been Already Cancelled', 'data' => []]);
         }
@@ -543,12 +544,13 @@ class EwayBillController extends Controller
             {
                 return response()->json(['status' => 'error', 'message' => 'Update Transporter Detail', 'data' => []]);
             }
+            if(empty($order->vehicle_no))
+            {
+                return response()->json(['status' => 'error', 'message' => 'Vehicle No can not be Empty,please Order', 'data' => []]);
+            }
             // case fo self Transporter
             if ($order->transporter_id == 'NO_GSTN') {
-                if(empty($order->vehicle_no))
-                {
-                    return response()->json(['status' => 'error', 'message' => 'Vehicle No can not be Empty,please Order', 'data' => []]);
-                }
+
                 $params['mode_of_transport'] = $order->transportation_mode;
                 $params['vehicle_number'] = $order->vehicle_no;
 
@@ -632,7 +634,7 @@ class EwayBillController extends Controller
             }
 
             $data=['order_invoice_number' => $order->order_invoice_number];
-            if ($order->transporter_name == 'SELF') {
+            if ($order->transporter_id == 'NO_GSTN') {
                 $params["vehicle_number"] = $order->vehicle_no; // $data['transporter_vehicle_number']; //to be discussed
                 $params["mode_of_transport"] = $order->transportation_mode;
 

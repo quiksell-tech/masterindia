@@ -152,7 +152,7 @@
                         icon: 'success',
                         title: title,
                         text: response.message,
-                        timer: 4000,
+                        timer: 40000,
                         showConfirmButton: false
                     });
                 }else{
@@ -160,7 +160,7 @@
                         icon: 'error',
                         title: title,
                         text: response.message,
-                        timer: 4000,
+                        timer: 40000,
                         showConfirmButton: false
                     });
                 }

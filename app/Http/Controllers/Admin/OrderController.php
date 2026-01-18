@@ -68,7 +68,7 @@ class OrderController extends Controller
             'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
             'vehicle_no' => [
                 'nullable',
-                Rule::requiredIf(fn () => $request->transporter_id == 'NO_GSTN'),
+                Rule::requiredIf(fn () => $request->transporter_id != 'NO_DETAIL'),
                 'string',
                 'max:20'
                 ],
@@ -376,7 +376,7 @@ class OrderController extends Controller
     public function companyAddresses($companyId,$partyId)
     {
         return MiCompanyAddress::where('company_id', $companyId)
-            ->where('party_id', $partyId)
+            //->where('party_id', $partyId)
             ->where('is_active','Y')->get(['address_id', 'address_line', 'city', 'state', 'pincode','party_id']);
     }
     protected function renderAddress(

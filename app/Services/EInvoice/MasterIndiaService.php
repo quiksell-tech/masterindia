@@ -237,9 +237,12 @@ class MasterIndiaService
     {
 
         $original_data = $params;
-        $endpoint = $this->BASE_URL . '/cancelEinvoice';
-        $params['access_token'] = $this->ACCESS_TOKEN;
-        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, [], 'MasterIndia', 'can_e_inv', $data['order_invoice_number']);
+        $endpoint = $this->BASE_URL . '/cancel-einvoice/';
+        $headers = [
+            'Authorization' => 'JWT ' . $this->ACCESS_TOKEN
+        ];
+
+        $result = $this->guzzleService->request($endpoint, 'POST', 'json', [], $params, $headers, 'MasterIndia', 'can_e_inv', $data['order_invoice_number']);
 
         if ($result['error'] === false) {
             $response = json_decode($result['data'], true);

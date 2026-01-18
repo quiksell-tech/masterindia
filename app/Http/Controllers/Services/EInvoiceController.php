@@ -18,7 +18,8 @@ class EInvoiceController extends Controller
 {
     protected $masterIndiaService;
     protected $masterIndiaEInvoiceTransaction;
-    protected $company_gstn = '05AAAPG7885R002';
+   // protected $company_gstn = '05AAAPG7885R002'; by IShan
+    protected $company_gstn = '05AAABC0181E1ZE';
 
     public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEInvoiceTransaction $masterIndiaEInvoiceTransaction)
     {
@@ -204,7 +205,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" => $this->company_gstn,
+            "user_gstin" =>'09AAAPG7885R002',// $this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",
@@ -333,7 +334,7 @@ class EInvoiceController extends Controller
             'ack_date' => $response['message']['AckDt'],
             'creditnote_irn_no' => $response['message']['Irn'],
             'qrcode_url' => $response['message']['QRCodeUrl'],
-            'einvoice_pdf_url' => $response['message']['EinvoicePdf'],
+            'creditnote_pdf_url' => $response['message']['EinvoicePdf'],
             'status_received' => $response['message']['Status'],
             'alert_message' => $response['message']['alert'],
             'request_id' => $response['requestId'],
@@ -352,35 +353,41 @@ class EInvoiceController extends Controller
 
     public function cancelEInvoice(Request $request, $order_id)
     {
-
-        $order = MiOrder::where('order_id', $order_id)->get();
+        if(empty($request->cancel_reason))
+        {
+            return response()->json(['status' => 'error', 'message' => 'Select cancel reason', 'data' => []]);
+        }
+        $order = MiOrder::where('order_id', $order_id)->first();
         if (empty($order)) {
             return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
         }
+
         $params = [
 
-            "user_gstin" => $this->company_gstn,
+            "user_gstin" =>'09AAAPG7885R002',// $this->company_gstn,
             "irn" => $order->irn_no,
-            "cancel_reason" => $request->cancellation_reasons,
+            "cancel_reason" => $request->cancel_reason,
             "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
         ];
 
         $data=['order_invoice_number'=>$order->order_invoice_number];
         $response = $this->masterIndiaService->cancelEInvoice($data,$params);
 
-        $isUpdated = $this->masterIndiaEInvoiceTransaction->update(['order_id' => $order->order_id], [
-            'invoice_status' => 'Cancelled',
-            'cancellation_reason' => $params["cancel_reason"],
-            'cancellation_remarks' => $params['cancel_remarks'],
-            'status_received' => 'CNL'
-        ]);
+        $isUpdated = $this->masterIndiaEInvoiceTransaction
+            ->where('order_id', $order->order_id)
+            ->update([
+                'invoice_status'       => 'C',
+                'cancellation_reason'  => $params['cancel_reason'],
+                'cancellation_remarks' => $params['cancel_remarks'],
+                'status_received'      => 'CNL',
+            ]);
 
         if ($isUpdated) {
             $order->update([
                 'irn_status' => 'X',
-                'irn_status_message' => 'Einvoice has been cancelled ' . ($response['display_message'] ?? '')
+                'irn_status_message' => 'E-invoice has been cancelled ' . ($response['display_message'] ?? '')
             ]);
-            return response()->json(['status' => 'success', 'message' => 'Einvoice has been cancelled at', 'data' => []]);
+            return response()->json(['status' => 'success', 'message' => 'E-invoice has been cancelled', 'data' => []]);
         }
 
         return response()->json(['status' => 'error', 'message' => 'Invoice cancelled but failed to save response', 'data' => []]);
@@ -532,7 +539,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" => $this->company_gstn,
+            "user_gstin" =>'09AAAPG7885R002',// $this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",

@@ -435,7 +435,7 @@
                     <i class="fas fa-save"></i> Save Items
                 </button>
             </div>
-            @if(count($items)>0)
+            @if(count($items)>0 && $order->transporter_id !='NO_DETAIL' && !empty($order->vehicle_no))
                 <div class="card mt-3">
                     <div class="card-header py-2 d-flex justify-content-between align-items-center">
                         <h6 class="card-title mb-0">
@@ -479,18 +479,14 @@
                                class="btn btn-sm btn-danger">
                                 <i class="fas fa-file-pdf"></i> Invoice PDF
                             </a>
-
-                            <a href="javascript:void(0)"
-                               class="btn btn-sm btn-warning"
-                               onclick="createEwayBill({{$order->order_id}})"
-                            >
+                            @if($order->eway_status != 'C')
+                            <a href="javascript:void(0)" class="btn btn-sm btn-warning" onclick="createEwayBill({{$order->order_id}})">
                                 <i class="fas fa-road"></i> Generate E-WayBill
                             </a>
+                            @endif
 
                             <a href="javascript:void(0)"
-                               class="btn btn-sm btn-info"
-                               onclick="openCancelEwayBillModal('{{$order->order_id}}')"
-                            >
+                               class="btn btn-sm btn-info"  onclick="openCancelEwayBillModal('{{$order->order_id}}')">
                                 <i class="fas fa-file-invoice"></i> Cancel E-WayBill
                             </a>
                             <a href="javascript:void(0)"
@@ -1001,7 +997,7 @@
                         message: 'Enter Order Invoice Number'
                     });
                 }
-                if ($('#transporter_id').val().toLowerCase() === 'no_gstn' ) {
+                if ($('#transporter_id').val() != 'NO_DETAIL' ) {
                     fields.push({
                         id: '#vehicle_no',
                         message: 'Please enter vehicle no'
