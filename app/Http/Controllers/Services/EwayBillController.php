@@ -35,50 +35,6 @@ class EwayBillController extends Controller
     }
 
 
-    /**
-     * Generate Eway Bill
-     *
-     * Process works as below:
-     * 1. Checks if eway bill is not created already
-     * 2. Fetch summary from party_sell_order_summary
-     * 3. Fetch transporter id from logistics_transporter  if not self-pickup (transporter_name = psos.tracking_partner_name)
-     * 4. Fetch party details from party_details (party_id = psos.purchaser_party_id)
-     * 5. Fetch company details from company_details (party_id = psos.seller_party_id)
-     * 6. Fetch order details from private_db.eway_calc_v
-     * 7. Validate party_gstin using Masterindia API
-     *
-     *
-     * Update masterindia_ewaybill_transaction with response data
-     * Update party_sell_order_summary fields eway_status=C/E  & eway_status_message
-     *
-     *
-     * @header Content-Type application/x-www-form-urlencoded
-     * @header Authorization {API Key Here}
-     *
-     * @bodyParam sell_invoice_ref_no integer required . Example: 213030
-     * @bodyParam eway_service string required Supported Values are: MasterIndia. Example: MasterIndia
-     *
-     * @response scenario=success {
-     * "success": true,
-     * "message": "Eway bill has been created by........"
-     * }
-     *
-     * @response 400 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     *
-     * @response 422 scenario=failed {
-     * "success": false,
-     * "message": "Invalid or missing parameters"
-     * "errors" : []
-     * }
-     *
-     * @response 500 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     */
     public function generateEwayBill(Request $request, $order_id)
     {
 
@@ -302,6 +258,18 @@ class EwayBillController extends Controller
                 $ewayBillData['vehicle_number'] = $order->vehicle_no;
 
             }
+            if(!empty($order->transporter_document_no))
+            {
+                $ewayBillData['transporter_document_number'] = $order->transporter_document_no;
+            }
+            if(!empty($order->transportation_date))
+            {
+                $ewayBillData['transporter_document_date'] = $order->transportation_date;
+            }
+            if(!empty($order->transporter_name))
+            {
+                $ewayBillData['transporter_name'] = $order->transporter_name;
+            }
 
             $data=['order_invoice_number'=>$order->order_invoice_number];
 
@@ -346,47 +314,6 @@ class EwayBillController extends Controller
 
     }
 
-    /**
-     * Cancel Eway Bill
-     *
-     * Process works as below:
-     * 1. Checks if eway bill is created for order
-     * 2. Fetch summary from party_sell_order_summary
-     * 3. Fetch company details from company_details (party_id = psos.seller_party_id)
-     *
-     * Update masterindia_ewaybill_transaction with eway_status,cancellation_reason,cancellation_remarks data
-     * Update party_sell_order_summary fields eway_status = X  & eway_status_message
-     *
-     *
-     * @header Content-Type application/x-www-form-urlencoded
-     * @header Authorization {API Key Here}
-     *
-     * @bodyParam sell_invoice_ref_no integer required . Example: 213030
-     * @bodyParam eway_service string required Supported Values are: MasterIndia. Example: MasterIndia
-     * @bodyParam cancel_reason string required Supported Values are: duplicate,order-cancelled,incorrect-details,others. Example: incorrect-details
-     * @bodyParam cancel_remarks string required Some text for cancellation. Example: Need to make correction in details
-     *
-     * @response scenario=success {
-     * "success": true,
-     * "message": "Eway bill has been cancelled at ........"
-     * }
-     *
-     * @response 400 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     *
-     * @response 422 scenario=failed {
-     * "success": false,
-     * "message": "Invalid or missing parameters"
-     * "errors" : []
-     * }
-     *
-     * @response 500 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     */
     public function cancelEwayBill(Request $request, $order_id)
     {
         $errors = Validator::make($request->all(),
@@ -449,47 +376,6 @@ class EwayBillController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Ewaybill has been cancelled', 'data' => []]);
     }
 
-    /**
-     * Update Eway Bill
-     *
-     * Process works as below:
-     * 1. Checks if eway bill is created
-     * 2. Fetch summary from party_sell_order_summary
-     * 3. Fetch company details from company_details (party_id = psos.seller_party_id)
-     *
-     *
-     * @header Content-Type application/x-www-form-urlencoded
-     * @header Authorization {API Key Here}
-     *
-     * @bodyParam sell_invoice_ref_no integer required . Example: 213030
-     * @bodyParam eway_service string required Supported Values are: MasterIndia. Example: MasterIndia
-     * @bodyParam action string required Supported Values are: update-vehicle,update-transporter,extend-validity. Example: extend-validity
-     * @bodyParam extension_reason string Required only if action = extend-validity, Supported Values are: natural-calamity,law-order,transshipment,accident,others. Example: transshipment
-     * @bodyParam extension_remarks string Required only if action = extend-validity, Write some text. Example: MasterIndia
-     * @bodyParam vehicle_update_reason string Required if action=vehicle-update Supported Values are: break-down,transshipment,others,first-time. Example: MasterIndia
-     * @bodyParam vehicle_update_remarks string Required if action=vehicle-update Write some text. Example: MasterIndia
-     *
-     * @response scenario=success {
-     * "success": true,
-     * "message": "{message}>"
-     * }
-     *
-     * @response 400 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     *
-     * @response 422 scenario=failed {
-     * "success": false,
-     * "message": "Invalid or missing parameters"
-     * "errors" : []
-     * }
-     *
-     * @response 500 scenario=failed {
-     * "success": false,
-     * "message": "{error message}",
-     *  }
-     */
     public function updateEwayBill(Request $request, $order_id)
     {
 
