@@ -154,10 +154,10 @@ class OrderController extends Controller
         $allItems  = MiItem::where('is_active', 'Y')->orderBy('item_name')->get();
         $transporters = MiTransporter::orderBy('name', 'desc')->get();
         $order = MiOrder::with([
-            'billFromParty:party_id,party_trade_name',
-            'billToParty:party_id,party_trade_name',
-            'shipToParty:party_id,party_trade_name',
-            'dispatchFromParty:party_id,party_trade_name',
+            'billFromParty:party_id,party_trade_name,party_gstn',
+            'billToParty:party_id,party_trade_name,party_gstn',
+            'shipToParty:party_id,party_trade_name,party_gstn',
+            'dispatchFromParty:party_id,party_trade_name,party_gstn',
 
             'billFromAddress',
             'billToAddress',
@@ -373,12 +373,28 @@ class OrderController extends Controller
             ]);
     }
 
-    public function companyAddresses($companyId,$partyId)
+    public function companyAddresses($companyId, $partyId = null)
     {
-        return MiCompanyAddress::where('company_id', $companyId)
-            //->where('party_id', $partyId)
-            ->where('is_active','Y')->get(['address_id', 'address_line', 'city', 'state', 'pincode','party_id']);
+        return MiCompanyAddress::query()
+            ->join('mi_party', 'mi_party.party_id', '=', 'mi_company_addresses.party_id')
+            ->where('mi_company_addresses.company_id', $companyId)
+            ->where('mi_company_addresses.is_active', 'Y')
+            ->where('mi_party.is_active', 'Y')
+            ->when($partyId, function ($q) use ($partyId) {
+                $q->where('mi_company_addresses.party_id', $partyId);
+            })
+            ->get([
+                'mi_company_addresses.address_id',
+                'mi_company_addresses.address_line',
+                'mi_company_addresses.city',
+                'mi_company_addresses.state',
+                'mi_company_addresses.pincode',
+                'mi_company_addresses.party_id',
+                'mi_party.party_gstn',
+                'mi_party.name',
+            ]);
     }
+
     protected function renderAddress(
         $name,
         $city,

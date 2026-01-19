@@ -222,7 +222,7 @@
                                             {{ $order->billToAddress->city?? '' }}
                                             {{ $order->billToAddress->state?? '' }}
                                             {{ $order->billToAddress->pincode?? '' }}
-                                            {{ $order->bill_to_party_id->party_gstn ?? '-' }}
+                                            {{ $order->billToParty->party_gstn ?? '-' }}
                                         </option>
                                     </select>
                                 </div>
@@ -264,7 +264,7 @@
                                             {{ $order->shipToAddress->city ?? '-' }}
                                             {{ $order->shipToAddress->state ?? '-' }}
                                             {{ $order->shipToAddress->pincode ?? '-' }}
-                                            {{ $order->ship_to_party_id->party_gstn ?? '-' }}
+                                            {{ $order->shipToParty->party_gstn ?? '-' }}
                                         </option>
                                     </select>
                                 </div>
@@ -1042,7 +1042,7 @@
                     data.forEach(addr => {
                         options += `
                     <option value="${addr.address_id}">
-                        ${addr.address_line}, ${addr.city}, ${addr.state} - ${addr.pincode}
+                       ${addr.name}- ${addr.party_gstn} ,${addr.address_line}, ${addr.city}, ${addr.state} - ${addr.pincode}
                     </option>`;
                     });
 
