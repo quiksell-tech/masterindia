@@ -20,8 +20,6 @@ class OrderController extends Controller
 
     public function __construct() {
 
-
-
     }
     public function index()
     {
@@ -158,7 +156,6 @@ class OrderController extends Controller
             'billToParty:party_id,party_trade_name,party_gstn',
             'shipToParty:party_id,party_trade_name,party_gstn',
             'dispatchFromParty:party_id,party_trade_name,party_gstn',
-
             'billFromAddress',
             'billToAddress',
             'shipToAddress',
@@ -261,9 +258,7 @@ class OrderController extends Controller
                 optional($order->dispatchFromParty)->phone
             ),
 
-
-
-        ];
+            ];
 
         return response()->json($orderData);
     }

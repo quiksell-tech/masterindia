@@ -138,7 +138,7 @@ class EwayBillController extends Controller
                 }
                 $items_list[] = [
                     "product_name" => $item->item_name,
-                    "product_description" => $item->item_description.' '.$item->item_code,
+                    "product_description" => $item->item_code.' '.$item->item_description,
                     "hsn_code" => $item->hsn_code,
                     "unit_of_product" => $item->item_unit,  // to be discussed
                     "cgst_rate" => round($cgst_rate, 2),
