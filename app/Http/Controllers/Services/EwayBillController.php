@@ -182,7 +182,7 @@ class EwayBillController extends Controller
                 }
                 $items_list[] = [
                     "product_name" => $item->item_name,
-                    "product_description" => $item->item_description,
+                    "product_description" => $item->item_description.' '.$item->item_code,
                     "hsn_code" => $item->hsn_code,
                     "unit_of_product" => $item->item_unit,  // to be discussed
                     "cgst_rate" => round($cgst_rate, 2),
@@ -559,23 +559,30 @@ class EwayBillController extends Controller
                 "reason_code_for_vehicle_updation" => $this->vehicle_update_reason[$request->vehicle_update_reason] ?? 'Others',
                 "reason_for_vehicle_updation" => $request->vehicle_update_remarks,
                 'vehicle_type' => $order->vehicle_type,
-                // "transporter_document_number" => strtoupper($data['ext_invoice_ref_no']),
-                // "transporter_document_date" => date('d/m/Y', strtotime($data['invoice_date'])),
+               'vehicle_number' => $order->vehicle_no,
                 "mode_of_transport" => $order->transportation_mode,
                 "data_source" => "erp"
             ];
 
-            // case fo self Transporter
-            if ($order->transporter_id == 'NO_GSTN') {
-
-                $params['mode_of_transport'] = $order->transportation_mode;
-                $params['vehicle_number'] = $order->vehicle_no;
-
-
-            }else{
-
-                return response()->json(['status' => 'error', 'message' => 'Update Transporter Detail To Self Pickup ', 'data' => []]);
+            if (!empty($order->transporter_document_no)) {
+                $params['transporter_document_number'] = $order->transporter_document_no;
             }
+            if (!empty($order->transportation_date)) {
+
+                $params['transporter_document_date'] = date('d/m/Y', strtotime($order->transportation_date));
+            }
+//
+//            // case fo self Transporter
+//            if ($order->transporter_id == 'NO_GSTN') {
+//
+//                $params['mode_of_transport'] = $order->transportation_mode;
+//                $params['vehicle_number'] = $order->vehicle_no;
+//
+//
+//            }else{
+//
+//                return response()->json(['status' => 'error', 'message' => 'Update Transporter Detail To Self Pickup ', 'data' => []]);
+//            }
 
 
             if(!empty($order->dispatchFromAddress->address_id))
@@ -609,19 +616,8 @@ class EwayBillController extends Controller
             {
                 $params['transporter_name'] = $order->transporter_name;
             }
-            if(!empty($order->transporter_document_no))
-            {
-                $params['transporter_document_number'] = $order->transporter_document_no;
-            }
-            if(!empty($order->transportation_date))
-            {
-                $params['transporter_document_date'] = $order->transportation_date;
-            }
 
-            if(empty( $order->transporter_id) || $order->transporter_id=='NO_GSTN' || $order->transporter_id=='NO_DETAIL')
-            {
-                return response()->json(['status' => 'error', 'message' => 'Please Update Transporter Id And Name', 'data' => []]);
-            }
+
             $data=['order_invoice_number' => $order->order_invoice_number];
 
             $response = $this->masterIndiaService->updateTransporterID($data,$params);
