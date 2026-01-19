@@ -256,6 +256,9 @@ class EwayBillController extends Controller
 
                 $ewayBillData['transporter_id'] = $order->transporter_id;// GSTN of transporter
                 $ewayBillData['vehicle_number'] = $order->vehicle_no;
+                $ewayBillData['transportation_mode'] = $order->transportation_mode;
+                $ewayBillData['vehicle_type'] = $order->vehicle_type;
+
 
             }
             if(!empty($order->transporter_document_no))
