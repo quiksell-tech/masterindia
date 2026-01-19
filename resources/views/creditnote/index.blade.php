@@ -83,11 +83,12 @@
                                 </a>
                                 @endif
                                 @if($order->credit_note_status=='C')
-                                <a href="javascript:void(0)"
-                                   class="btn btn-sm btn-warning"
-                                   onclick="cancelCreditNote('{{ $order->creditnote_id }}')">
-                                    <i class="fas fa-road"></i> Cancel CreditNote
-                                </a>
+
+                                    <a href="javascript:void(0)"
+                                       class="btn btn-sm btn-info"
+                                       onclick="openCancelEInvoiceModal('{{ $order->order_id }}')">
+                                        <i class="fas fa-file-invoice"></i> Cancel Credit Note
+                                    </a>
                                     <a href="{{ $order->creditnote_pdf_url }}" target="_blank">
                                     <i class="fas fa-road"></i>pdf
                                 </a>
@@ -230,7 +231,69 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="cancelEInvoiceModal" tabindex="-1" role="dialog" aria-labelledby="cancelEInvoiceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
+            <form id="cancelEInvoiceForm">
+                @csrf
 
+                <input type="hidden" name="einvoice_order_id" id="einvoice_order_id">
+
+                <div class="modal-content">
+                    <div class="modal-header bg-info">
+                        <h5 class="modal-title" id="cancelEInvoiceModalLabel">
+                            <i class="fas fa-file-invoice"></i> Cancel E-Invoice
+                        </h5>
+
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- Cancel Reason -->
+                        <div class="form-group">
+                            <label for="cancel_reason">
+                                Cancel Reason <span class="text-danger">*</span>
+                            </label>
+                            <select name="cancel_reason" id="cancel_reason" class="form-control" required>
+                                <option value="">-- Select Reason --</option>
+                                @foreach(config('einvoice.cancellation_reasons') as $label => $value)
+                                    <option value="{{ $value }}">
+                                        {{ ucwords(str_replace('-', ' ', $label)) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Cancel Remarks -->
+                        <div class="form-group">
+                            <label for="cancel_remarks">
+                                Cancel Remarks <span class="text-danger">*</span>
+                            </label>
+                            <textarea
+                                name="cancel_remarks"
+                                id="cancel_remarks"
+                                class="form-control"
+                                rows="3"
+                                maxlength="100"
+                                placeholder="Enter remarks (max 100 characters)"
+                                required></textarea>
+                            <small class="text-muted">
+                                <span id="remarks_count">0</span>/100 characters
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+
+                        <button type="button" class="btn btn-info" id="cancelEinvoiceBtn">
+                            <i class="fas fa-ban"></i> Cancel E-Invoice
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
 @endsection
 @section('scripts')
@@ -264,7 +327,19 @@
                 }
             });
         }
+        function openCancelEInvoiceModal(orderId) {
 
+            document.getElementById('einvoice_order_id').value = orderId;
+            document.getElementById('cancel_reason').value = '';
+            document.getElementById('cancel_remarks').value = '';
+            document.getElementById('remarks_count').innerText = 0;
+
+            $('#cancelEInvoiceModal').modal('show');
+        }
+
+        document.getElementById('cancel_remarks').addEventListener('input', function () {
+            document.getElementById('remarks_count').innerText = this.value.length;
+        });
         function cancelCreditNote(orderId)
         {
             $.ajax({

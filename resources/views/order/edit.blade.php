@@ -179,6 +179,7 @@
                                             {{ $order->billFromAddress->city ?? '-' }}
                                             {{ $order->billFromAddress->state ?? '-' }}
                                             {{ $order->billFromAddress->pincode ?? '-' }}
+                                            {{ $order->billFromParty->party_gstn ?? '-' }}
                                         </option>
                                     </select>
                                 </div>
@@ -221,6 +222,7 @@
                                             {{ $order->billToAddress->city?? '' }}
                                             {{ $order->billToAddress->state?? '' }}
                                             {{ $order->billToAddress->pincode?? '' }}
+                                            {{ $order->bill_to_party_id->party_gstn ?? '-' }}
                                         </option>
                                     </select>
                                 </div>
@@ -262,7 +264,7 @@
                                             {{ $order->shipToAddress->city ?? '-' }}
                                             {{ $order->shipToAddress->state ?? '-' }}
                                             {{ $order->shipToAddress->pincode ?? '-' }}
-
+                                            {{ $order->ship_to_party_id->party_gstn ?? '-' }}
                                         </option>
                                     </select>
                                 </div>
@@ -302,6 +304,7 @@
                                             {{ $order->dispatchFromAddress->city ?? '-' }}
                                             {{ $order->dispatchFromAddress->state ?? '-' }}
                                             {{ $order->dispatchFromAddress->pincode ?? '-' }}
+                                            {{ $order->dispatch_from_party_id->party_gstn ?? '-' }}
                                         </option>
                                     </select>
                                 </div>
@@ -813,8 +816,84 @@
         $('#ewayBillForm').submit(function (e) {
             e.preventDefault();
 
-            let orderId = $('#order_id').val();
+            $('.is-invalid').removeClass('is-invalid');
+
+            let isValid = true;
             let actionType = $('#action_type').val();
+
+            function markInvalid(selector) {
+                $(selector).addClass('is-invalid');
+                isValid = false;
+            }
+
+            // ---------------- CANCEL VALIDATION ----------------
+            if (actionType === 'cancel') {
+
+                if (!$('[name="cancel_reason"]').val()) {
+                    markInvalid('[name="cancel_reason"]');
+                }
+
+                if (!$('[name="cancel_remark"]').val().trim()) {
+                    markInvalid('[name="cancel_remark"]');
+                }
+            }
+
+            // ---------------- UPDATE VALIDATION ----------------
+            if (actionType === 'update') {
+
+                let updateAction = $('[name="action"]').val();
+
+                if (!updateAction) {
+                    markInvalid('[name="action"]');
+                }
+
+                // ---- Extend Validity ----
+                if (updateAction === 'extend-validity') {
+
+                    if (!$('[name="extension_reason"]').val()) {
+                        markInvalid('[name="extension_reason"]');
+                    }
+
+                    if (!$('[name="extension_remarks"]').val().trim()) {
+                        markInvalid('[name="extension_remarks"]');
+                    }
+                }
+
+                // ---- Update Vehicle ----
+                if (updateAction === 'update-vehicle') {
+
+                    if (!$('[name="vehicle_update_reason"]').val()) {
+                        markInvalid('[name="vehicle_update_reason"]');
+                    }
+
+                    if (!$('[name="vehicle_update_remarks"]').val().trim()) {
+                        markInvalid('[name="vehicle_update_remarks"]');
+                    }
+                }
+
+                // ---- Update Transporter ----
+                if (updateAction === 'update-transporter') {
+
+                    if (!$('[name="transporter_id"]').val().trim()) {
+                        markInvalid('[name="transporter_id"]');
+                    }
+
+                    if (!$('[name="transporter_name"]').val().trim()) {
+                        markInvalid('[name="transporter_name"]');
+                    }
+                }
+            }
+
+            // ---------------- STOP IF INVALID ----------------
+            if (!isValid) {
+                showAjaxResponse({
+                    status: 'error',
+                    message: 'Please fill all mandatory fields'
+                }, 'Validation Error');
+                return;
+            }
+            let orderId = $('#order_id').val();
+            // let actionType = $('#action_type').val();
             let url = actionType === 'cancel'
                 ? `/api/eway-bill/${orderId}/cancel`
                 : `/api/eway-bill/${orderId}/update`;
