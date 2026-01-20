@@ -188,7 +188,7 @@ class EInvoiceController extends Controller
 
             $items_list[] = [
                 "item_serial_number" => $i++,
-                "product_description" => $item->item_name.' '.$item->item_code,
+                "product_description" => $item->item_code.' '.$item->item_name,
                 "is_service" => 'N',
                 "hsn_code" => $item->hsn_code,
                 "bar_code" => '',
@@ -565,7 +565,7 @@ class EInvoiceController extends Controller
 
             $items_list[] = [
                 "item_serial_number" => $i++,
-                "product_description" =>  $item->item_name.' '.$item->item_name,
+                "product_description" => $item->item_code.' '.$item->item_name,
                 "is_service" => 'N',
                 "hsn_code" => $item->hsn_code,
                 "bar_code" => '',
