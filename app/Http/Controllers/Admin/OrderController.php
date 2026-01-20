@@ -13,7 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-
+use App\Services\OrderActionService;
 
 class OrderController extends Controller
 {
@@ -163,6 +163,11 @@ class OrderController extends Controller
         ])
             ->where('order_id', $order->order_id)
             ->firstOrFail();
+
+        $allowedActions = OrderActionService::allowed(
+            $order->irn_status,
+            $order->eway_status
+        );
         // Get latest order_invoice_date
         $latestDate = MiOrder::max('order_invoice_date');
         $orderInvoiceDate = Carbon::parse($order->order_invoice_date)->format('Y-m-d');
@@ -183,7 +188,7 @@ class OrderController extends Controller
             $defaultDate=$orderInvoiceDate;
         }
 
-        return view('order.edit', compact('order', 'order','items','allItems','transporters','latestDate','today','latestDate','lastDateOfMonth','defaultDate','orderInvoiceDate'));
+        return view('order.edit', compact('order', 'order','items','allItems','transporters','latestDate','today','latestDate','lastDateOfMonth','defaultDate','orderInvoiceDate','allowedActions'));
     }
     public function invoiceData(MiOrder $order)
     {
@@ -264,6 +269,34 @@ class OrderController extends Controller
     }
     public function update(Request $request, MiOrder $order)
     {
+        if ($order->irn_status=='C')
+        {
+            $rules = [
+                'transporter_id'     => ['required', 'string'],
+                'vehicle_no' => [
+                    'nullable',
+                    Rule::requiredIf(fn () => $request->transporter_id == 'NO_GSTN'),
+                    'string',
+                    'max:20'
+                ],
+                ];
+            $data['transporter_name'] =$request->transporter_name;
+            $order['transporter_document_no'] =$request->transporter_document_no;
+            if(!empty($request->transportation_date))
+            {
+                $transportation_date = Carbon::createFromFormat('d-M-Y', $request->transportation_date)
+                    ->format('Y-m-d');
+                $order['transportation_date'] =$transportation_date;
+            }
+            $validated = $request->validate($rules);
+            $data['transporter_id']       = $validated['transporter_id'];
+            $order->update($data);
+
+            // ✅ Redirect back to edit page
+            return redirect()
+                ->route('orders.edit', $order->order_id)
+                ->with('success', 'Order updated successfully');
+        }
         $rules = [
             'transporter_id'     => ['required', 'string'],
             'order_invoice_date'    => ['required', 'string'],

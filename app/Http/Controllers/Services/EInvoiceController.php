@@ -456,6 +456,17 @@ class EInvoiceController extends Controller
             ->where('order_id', $order_id)
             ->first();
 
+        if($order->irn_status=='X' && $order->eway_status=='C'){
+
+            return response()->json(['status' => 'error', 'message' => 'Please cancel Eway first than Create E-invoice', 'data' => []]);
+        }
+
+        if($order->irn_status=='X' && $order->eway_status!='C'){
+
+            $order_id->order_invoice_number=$this->getNextSequence($order_id->order_invoice_number);
+
+        }
+
         if (empty($items)) {
             return response()->json(['status' => 'error', 'message' => 'Order Items Are not added', 'data' => []]);
         }
@@ -558,7 +569,7 @@ class EInvoiceController extends Controller
 
             $items_list[] = [
                 "item_serial_number" => $i++,
-                "product_description" => $item->item_name.' '.$item->item_code,
+                "product_description" =>  $item->item_name.' '.$item->item_name,
                 "is_service" => 'N',
                 "hsn_code" => $item->hsn_code,
                 "bar_code" => '',
@@ -722,17 +733,45 @@ class EInvoiceController extends Controller
         ]);
 
         if ($isRecordCreated) {
+
             $order->update([
                 'irn_no' => $response['message']['Irn'],
                 'einvoice_pdf_url' => $response['message']['EinvoicePdf'],
                 'irn_status' => 'C',
-                'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? '')
+                'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? ''),
+                'order_invoice_number'=>$order_id->order_invoice_number,
             ]);
 
             return response()->json(['status' => 'success', 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
         }
 
         return response()->json(['status' => 'error', 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
+    }
+    private function getNextSequence(string $previous)
+    {
+        $parts = explode('-', $previous);
+        $count = count($parts);
+
+        // Case 1: Initial invoice number (3 parts)
+        if ($count === 3) {
+            return $previous . '-01';
+        }
+
+        // Case 2: Already has a sequence (4 or more parts)
+        if ($count >= 4) {
+            $seq = array_pop($parts); // last part is sequence
+
+            // Ensure the last part is numeric
+            if (!is_numeric($seq)) {
+                return false; // invalid format
+            }
+
+            $nextSeq = str_pad(((int)$seq) + 1, 2, '0', STR_PAD_LEFT);
+            return implode('-', $parts) . '-' . $nextSeq;
+        }
+
+        // Anything else is invalid
+        return false;
     }
 
     public function insertCreditNoteData(Request $request, $order_id)

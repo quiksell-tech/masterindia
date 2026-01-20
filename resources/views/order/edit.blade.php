@@ -22,16 +22,16 @@
                     <div class="col-md-3">
                         <label>Supply Type</label>
                         <select name="supply_type" id="supply_type" class="form-control mb-3">
-                            <option value="outward" {{ $order->supply_type == 'outward' ? 'selected' : '' }}>Outward</option>
-                            <option value="inward" {{ $order->supply_type == 'inward' ? 'selected' : '' }}>Inward</option>
+                            <option value="outward" {{ $order->supply_type == 'outward' ? 'selected' : '' }} {{ in_array('create_irn', $allowedActions) ? '' : 'disabled' }}>Outward</option>
+                            <option value="inward" {{ $order->supply_type == 'inward' ? 'selected' : '' }} {{ in_array('create_irn', $allowedActions) ? '' : 'disabled' }}>Inward</option>
                         </select>
                     </div>
 
                     <div class="col-md-3">
                         <label>Sub Supply Type</label>
                         <select name="sub_supply_type" class="form-control mb-3">
-                            <option value="supply" {{ $order->sub_supply_type == 'supply' ? 'selected' : '' }}>Supply</option>
-                            <option value="export" {{ $order->sub_supply_type == 'export' ? 'selected' : '' }}>Export</option>
+                            <option value="supply" {{ $order->sub_supply_type == 'supply' ? 'selected' : '' }} {{ in_array('create_irn', $allowedActions) ? '' : 'disabled' }}>Supply</option>
+                            <option value="export" {{ $order->sub_supply_type == 'export' ? 'selected' : '' }} {{ in_array('create_irn', $allowedActions) ? '' : 'disabled' }}>Export</option>
                         </select>
                     </div>
                     <div class="col-md-3" id="order_invoice_div" >
@@ -41,7 +41,7 @@
                                    name="order_invoice_number"
                                    id="order_invoice_number"
                                    {{ $order->supply_type == 'outward' ? 'readonly' : '' }}
-                                   class="form-control mb-3" value="{{$order->order_invoice_number}}">
+                                   class="form-control mb-3" value="{{$order->order_invoice_number}}" {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
                         </div>
                     </div>
 
@@ -52,8 +52,9 @@
                                    name="order_invoice_date"
                                    id="order_invoice_date"
                                    class="form-control mb-3"
-                                   value="{{ old('order_invoice_date', \Carbon\Carbon::parse($order->order_invoice_date)->format('d-M-Y')) }}"
-                                   placeholder="DD-MMM-YYYY">
+                                   value="{{ old('order_invoice_date', \Carbon\Carbon::parse($order->order_invoice_date)->format('Y-m-d')) }}"
+                                {{ in_array('create_irn', $allowedActions) ? '' : 'disabled' }} >
+
                         </div>
                     </div>
 
@@ -107,7 +108,8 @@
                                    name="vehicle_no"
                                    id="vehicle_no"
                                    class="form-control mb-3"
-                                   value="{{$order->vehicle_no}}">
+                                   value="{{$order->vehicle_no}}"
+                            >
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -117,7 +119,8 @@
                                    name="transporter_document_no"
                                    id="transporter_document_no"
                                    class="form-control mb-3"
-                                   value="{{$order->transporter_document_no}}">
+                                   value="{{$order->transporter_document_no}}"
+                                {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }} >
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -127,8 +130,7 @@
                                    name="transportation_date"
                                    id="transportation_date"
                                    class="form-control mb-3"
-                                   value="{{ old('transportation_date', \Carbon\Carbon::parse($order->transportation_date)->format('d-M-Y')) }}"
-                                   placeholder="DD-MMM-YYYY">
+                                   value="{{ old('transportation_date', \Carbon\Carbon::parse($order->transportation_date)->format('d-M-Y')) }}">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -162,7 +164,8 @@
                                            class="form-control party-search"
                                            placeholder="Search Party / GSTN"
                                            data-target="bill_from_address_id"
-                                           data-party-input="bill_from_party_id" value="{{ $order->billFromParty->party_trade_name ?? '-' }}">
+                                           data-party-input="bill_from_party_id" value="{{ $order->billFromParty->party_trade_name ?? '-' }}-(  {{ $order->billToParty->party_gstn ?? '-' }})"
+                                        {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
 
                                     <input type="hidden"
                                            name="bill_from_party_id"
@@ -205,7 +208,8 @@
                                            placeholder="Search Party / GSTN"
                                            data-target="bill_to_address_id"
                                            data-party-input="bill_to_party_id"
-                                            value="{{ $order->billToParty->party_trade_name ?? '-' }}">
+                                            value="{{ $order->billToParty->party_trade_name ?? '-' }}-(  {{ $order->billToParty->party_gstn ?? '-' }})"
+                                        {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
 
                                     <input type="hidden"
                                            name="bill_to_party_id"
@@ -247,7 +251,8 @@
                                            class="form-control party-search"
                                            placeholder="Search Party / GSTN"
                                            data-target="ship_to_address_id"
-                                           data-party-input="ship_to_party_id" value="{{ $order->shipToParty->party_trade_name ?? '-' }}">
+                                           data-party-input="ship_to_party_id" value="{{ $order->shipToParty->party_trade_name ?? '-' }}-({{ $order->shipToParty->party_gstn ?? '-' }})"
+                                            {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
 
                                     <input type="hidden"
                                            name="ship_to_party_id"
@@ -288,7 +293,8 @@
                                            class="form-control party-search"
                                            placeholder="Search Party / GSTN"
                                            data-target="dispatch_from_address_id"
-                                           data-party-input="dispatch_from_party_id" value="{{ $order->dispatchFromParty->party_trade_name ?? '-' }}">
+                                           data-party-input="dispatch_from_party_id" value="{{ $order->dispatchFromParty->party_trade_name ?? '-' }}-({{ $order->dispatchFromParty->party_gstn ?? '-' }})"
+                                            {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
 
                                     <input type="hidden"
                                            name="dispatch_from_party_id"
@@ -426,7 +432,7 @@
                 </tbody>
             </table>
         </div>
-
+        @if(in_array('create_irn', $allowedActions))
         <div class="mt-2">
             <button type="button" class="btn btn-primary btn-sm" id="addRow">
                 <i class="fas fa-plus"></i> Add Item
@@ -438,42 +444,45 @@
                     <i class="fas fa-save"></i> Save Items
                 </button>
             </div>
+        </div>
+        @endif
             @if(count($items)>0 && $order->transporter_id !='NO_DETAIL' && !empty($order->vehicle_no))
-                <div class="card mt-3">
-                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-truck"></i> Eway Bill Action
-                        </h6>
 
-                        <h6 class="card-title mb-0">
-                            Eway Bill Status :
-                            <span class="badge
-                                @if($order->eway_status == 'C') bg-success
-                                @elseif($order->eway_status == 'E') bg-danger
-                                @elseif($order->eway_status == 'X') bg-secondary
-                                @else bg-warning
-                                @endif
-                                ">
-                                @if($order->eway_status == 'C')
-                                    CREATED
-                                @elseif($order->eway_status == 'E')
-                                    ERROR
-                                @elseif($order->eway_status == 'X')
-                                    CANCELLED
-                                @else
-                                    NEW
-                                @endif
-                             </span>
+                    <div class="card mt-3">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-truck"></i> Eway Bill Action
+                            </h6>
 
-                            @if(!empty($order->eway_status_message))
-                                <i class="fas fa-info-circle text-info ml-1"
-                                   data-toggle="tooltip"
-                                   data-placement="top"
-                                   title="{{ $order->eway_status_message }}">
-                                </i>
-                            @endif
-                        </h6>
-                    </div>
+                            <h6 class="card-title mb-0">
+                                Eway Bill Status :
+                                <span class="badge
+                                    @if($order->eway_status == 'C') bg-success
+                                    @elseif($order->eway_status == 'E') bg-danger
+                                    @elseif($order->eway_status == 'X') bg-secondary
+                                    @else bg-warning
+                                    @endif
+                                    ">
+                                    @if($order->eway_status == 'C')
+                                        CREATED
+                                    @elseif($order->eway_status == 'E')
+                                        ERROR
+                                    @elseif($order->eway_status == 'X')
+                                        CANCELLED
+                                    @else
+                                        NEW
+                                    @endif
+                                 </span>
+
+                                @if(!empty($order->eway_status_message))
+                                    <i class="fas fa-info-circle text-info ml-1"
+                                       data-toggle="tooltip"
+                                       data-placement="top"
+                                       title="{{ $order->eway_status_message }}">
+                                    </i>
+                                @endif
+                            </h6>
+                        </div>
 
 
                     <div class="card-body py-2">
@@ -482,21 +491,25 @@
                                class="btn btn-sm btn-danger">
                                 <i class="fas fa-file-pdf"></i> Invoice PDF
                             </a>
-                            @if($order->eway_status != 'C')
-                            <a href="javascript:void(0)" class="btn btn-sm btn-warning" onclick="createEwayBill({{$order->order_id}})">
-                                <i class="fas fa-road"></i> Generate E-WayBill
-                            </a>
+                            @if(in_array('create_eway', $allowedActions))
+                                <a href="javascript:void(0)" class="btn btn-sm btn-warning" onclick="createEwayBill({{$order->order_id}})">
+                                    <i class="fas fa-road"></i> Generate E-WayBill
+                                </a>
                             @endif
-                            @if($order->eway_status == 'C')
-                            <a href="javascript:void(0)"
-                               class="btn btn-sm btn-info"  onclick="openCancelEwayBillModal('{{$order->order_id}}')">
-                                <i class="fas fa-file-invoice"></i> Cancel E-WayBill
-                            </a>
-                            <a href="javascript:void(0)"
-                               class="btn btn-sm btn-info" onclick="openUpdateEwayBillModal('{{$order->order_id}}')">
-                                <i class="fas fa-file-invoice"></i> Update E-WayBill
-                            </a>
+                            @if(in_array('update_eway', $allowedActions))
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-info" onclick="openUpdateEwayBillModal('{{$order->order_id}}')">
+                                    <i class="fas fa-file-invoice"></i> Update E-WayBill
+                                </a>
                             @endif
+
+                            @if(in_array('cancel_eway', $allowedActions))
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-info"  onclick="openCancelEwayBillModal('{{$order->order_id}}')">
+                                    <i class="fas fa-file-invoice"></i> Cancel E-WayBill
+                                </a>
+                            @endif
+
                         </div>
                     </div>
                 </div>
@@ -541,14 +554,16 @@
 
                     <div class="card-body py-2">
                         <div class="d-flex justify-content-end gap-2">
-                            @if($order->irn_status != 'C')
-                            <a href="javascript:void(0)"
-                               class="btn btn-sm btn-warning"
-                               onclick="createEInvoice({{$order->order_id}})">
-                                <i class="fas fa-road"></i> Generate E-Invoice
-                            </a>
+
+                            @if(in_array('create_irn', $allowedActions))
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-warning"
+                                   onclick="createEInvoice({{$order->order_id}})">
+                                    <i class="fas fa-road"></i> Generate E-Invoice
+                                </a>
                             @endif
-                            @if($order->irn_status == 'C')
+
+                                @if(in_array('cancel_irn', $allowedActions))
                                 <a href="javascript:void(0)"
                                    class="btn btn-sm btn-warning"
                                    onclick="createEInvoiceCreditNote({{$order->order_id}})">
