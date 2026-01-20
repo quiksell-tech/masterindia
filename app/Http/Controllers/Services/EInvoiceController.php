@@ -530,7 +530,7 @@ class EInvoiceController extends Controller
 
         }
 
-        if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+        if ($order->billFromAddress->state_code == $order->billToAddress->state_code) {
 
             $total_igst_value = 0;
             $total_sgst_value = $order->total_tax / 2;
@@ -551,7 +551,7 @@ class EInvoiceController extends Controller
             $taxAmount = ($taxableAmount * $item->tax_percentage) / 100;
             $afterTaxValue = $taxableAmount + $taxAmount;
 
-            if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+            if ($order->billFromAddress->state_code == $order->billToAddress->state_code) {
 
                 $igst_value = 0;
                 $cgst_value = $taxAmount / 2;
