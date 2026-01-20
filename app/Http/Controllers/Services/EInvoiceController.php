@@ -456,15 +456,14 @@ class EInvoiceController extends Controller
             ->where('order_id', $order_id)
             ->first();
 
-        if($order->irn_status=='X' && $order->eway_status=='C'){
+        if(($order->irn_status=='C' || $order->irn_status=='X') && $order->eway_status=='C'){
 
             return response()->json(['status' => 'error', 'message' => 'Please cancel Eway first than Create E-invoice', 'data' => []]);
         }
+        $invoiceNumberForApi = $order->order_invoice_number;
 
-        if($order->irn_status=='X' && $order->eway_status!='C'){
-
-            $order_id->order_invoice_number=$this->getNextSequence($order_id->order_invoice_number);
-
+        if ($order->irn_status == 'X') {
+            $invoiceNumberForApi .= 'A';
         }
 
         if (empty($items)) {
@@ -482,14 +481,11 @@ class EInvoiceController extends Controller
         {
             return response()->json(['status' => 'error', 'message' => 'please Update bill TO Address', 'data' => []]);
         }
-        if(!empty($order->irn_no) && $order->irn_status=='C' )
+        if( $order->irn_status=='C' )
         {
             return response()->json(['status' => 'error', 'message' => 'IRN Already Created', 'data' => []]);
         }
-        if(!empty($order->eway_bill_no) && $order->eway_status!='C' )
-        {
-            return response()->json(['status' => 'error', 'message' => 'Eway Bill Is Not Created', 'data' => []]);
-        }
+
         // validate GSTN
         if (!empty($order->billToParty->party_gstn)) {
 
@@ -604,7 +600,7 @@ class EInvoiceController extends Controller
             ],
             "document_details" => [
                 "document_type" => "INV",
-                "document_number" => strtoupper($order->order_invoice_number),
+                "document_number" => strtoupper($invoiceNumberForApi),
                 "document_date" => date('d/m/Y', strtotime($order->order_invoice_date))
             ],
             "seller_details" => [
@@ -703,7 +699,7 @@ class EInvoiceController extends Controller
             ];
         }
 //        print_r($params);
-//        die;
+       // die;
         $data=['order_invoice_number'=>$order->order_invoice_number];
         $response = $this->masterIndiaService->generateEInvoice($data,$params);
 
@@ -739,7 +735,7 @@ class EInvoiceController extends Controller
                 'einvoice_pdf_url' => $response['message']['EinvoicePdf'],
                 'irn_status' => 'C',
                 'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? ''),
-                'order_invoice_number'=>$order_id->order_invoice_number,
+                'order_invoice_number'=>$invoiceNumberForApi,
             ]);
 
             return response()->json(['status' => 'success', 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);

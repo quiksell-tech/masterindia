@@ -47,6 +47,14 @@ class OrderActionService
                 $actions[] = self::CANCEL_EWAY;
             }
         }
+        // IRN cancelled but E-Way exists → allow cancel
+        if ($irnStatus === 'X' && $ewayStatus === 'C') {
+            $actions[] = self::CANCEL_EWAY;
+        }
+        // IRN cancelled And E-Way cancelled → allow IRN Create
+        if ($irnStatus === 'X' && $ewayStatus === 'X') {
+            $actions[] = self::CREATE_IRN;
+        }
 
         return array_values(array_unique($actions));
     }

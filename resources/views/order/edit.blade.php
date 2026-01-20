@@ -368,7 +368,8 @@
                                             data-tax_percentage="{{ $it->tax_percentage }}"
                                             data-item_code="{{ $it->item_code }}"
                                             data-hsn_code="{{ $it->hsn_code }}"
-                                        {{ $it->item_id == $item->item_id ? 'selected' : '' }}>
+                                        {{ $it->item_id == $item->item_id ? 'selected' : '' }}
+                                        {{ in_array('create_irn', $allowedActions) ? '' : 'disabled' }}>
                                         {{ $it->item_name }}
                                     </option>
                                 @endforeach
@@ -379,19 +380,22 @@
                             <input name="items[{{ $i }}][item_code]"
                                    class="form-control item_code"
                                    type="text" step="any"
-                                   value="{{ $item->item_code }}">
+                                   value="{{ $item->item_code }}"
+                                {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
                         </td>
                         <td>
                             <input name="items[{{ $i }}][hsn_code]"
                                    class="form-control hsn_code"
                                    type="text" step="any"
-                                   value="{{ $item->hsn_code }}">
+                                   value="{{ $item->hsn_code }}"
+                                {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
                         </td>
                         <td>
                             <input name="items[{{ $i }}][total_item_quantity]"
                                    class="form-control qty"
                                    type="number" step="any"
-                                   value="{{ $item->total_item_quantity }}">
+                                   value="{{ $item->total_item_quantity }}"
+                                {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
                         </td>
 
                         <td>
@@ -405,7 +409,8 @@
                             <input name="items[{{ $i }}][price_per_unit]"
                                    class="form-control rate"
                                    type="number" step="any"
-                                   value="{{ $item->price_per_unit }}">
+                                   value="{{ $item->price_per_unit }}"
+                                {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
                         </td>
 
                         <td>
@@ -437,7 +442,6 @@
             <button type="button" class="btn btn-primary btn-sm" id="addRow">
                 <i class="fas fa-plus"></i> Add Item
             </button>
-
 
             <div class="mt-3 d-flex justify-content-end">
                 <button type="submit" class="btn btn-success btn-sm">
@@ -580,8 +584,7 @@
                     </div>
                 </div>
 
-            @endif
-        </div>
+        @endif
     </form>
 
 {{--    Eway Bill Modal--}}
@@ -1123,7 +1126,7 @@
 
         });
     </script>
-
+    @if(in_array('create_irn', $allowedActions))
     <script>
         let rowIndex = {{ count($items) }};
 
@@ -1230,6 +1233,7 @@
             }
         });
     </script>
+    @endif
     <script>
         flatpickr("#order_invoice_date", {
             dateFormat: "d-M-Y",
