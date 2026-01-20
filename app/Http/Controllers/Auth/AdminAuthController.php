@@ -34,7 +34,7 @@ class AdminAuthController extends Controller
         // Check if user exists
         $user = MiAdminUser::where('phone', $request->phone)->first();
 
-        if (!$user) {
+        if (!$user || $user->is_active!='Y') {
             return response()->json([
                 'status' => false,
                 'message' => 'Phone number not registered'
