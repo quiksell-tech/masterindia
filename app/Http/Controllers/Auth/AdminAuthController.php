@@ -64,7 +64,7 @@ class AdminAuthController extends Controller
         $user->update([
             'otp' => $otp,
             'otp_expires_at' => now()->addMinutes(5),
-            'is_active' => true,
+
         ]);
 
         return response()->json([
@@ -87,7 +87,7 @@ class AdminAuthController extends Controller
         $user = MiAdminUser::where('phone', $request->phone)
             ->where('otp', $request->otp)
             ->where('otp_expires_at', '>=', now())
-            ->where('is_active', true)
+            ->where('is_active', 'Y')
             ->first();
 
         if (!$user) {
