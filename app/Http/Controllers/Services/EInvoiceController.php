@@ -214,7 +214,7 @@ class EInvoiceController extends Controller
                 "supply_type" => "B2B",
                 "charge_type" => "N",
                 "igst_on_intra" => "N",
-                "ecommerce_gstin" => ""
+                "ecommerce_gstin" => config('einvoice.ecommerce_gstin'),
             ],
             "document_details" => [
                 "document_type" => "CRN",
@@ -250,8 +250,8 @@ class EInvoiceController extends Controller
             "reference_details" => [
 
                 "preceding_document_details" => [[
-                    "reference_of_original_invoice" => strtoupper($order->order_invoice_number),
-                    "preceding_invoice_date" => date('d/m/Y', strtotime($order->order_invoice_date)),
+                    "reference_of_original_invoice" => strtoupper($order->order_invoice_number), // Original Order Invoice number
+                    "preceding_invoice_date" => date('d/m/Y', strtotime($order->order_invoice_date)), // Original Order Invoice Date
                     // "other_reference" => "2334"
                 ]],
 
@@ -586,7 +586,7 @@ class EInvoiceController extends Controller
                 "supply_type" => "B2B",
                 "charge_type" => "N",
                 "igst_on_intra" => "N",
-                "ecommerce_gstin" => ""
+                "ecommerce_gstin" => config('einvoice.ecommerce_gstin'),
             ],
             "document_details" => [
                 "document_type" => "INV",
