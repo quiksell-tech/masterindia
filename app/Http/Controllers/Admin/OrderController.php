@@ -290,6 +290,7 @@ class OrderController extends Controller
             }
             $validated = $request->validate($rules);
             $data['transporter_id'] = $validated['transporter_id'];
+            $data['vehicle_no'] = $validated['vehicle_no'];
             $order->update($data);
 
             // ✅ Redirect back to edit page
