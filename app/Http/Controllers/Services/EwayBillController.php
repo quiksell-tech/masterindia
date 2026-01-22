@@ -429,6 +429,9 @@ class EwayBillController extends Controller
             $order->save();
             $order->refresh();
         }
+
+
+
         if ($request->action == 'update-vehicle') {
 
             if( $order->transporter_id=='NO_DETAIL')
