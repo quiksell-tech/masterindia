@@ -272,14 +272,14 @@
 
                     if (response.status === 'success') {
 
-                        showAjaxResponse(response, 'Credit Note Cancel');
+                        showAjaxResponse(response, 'Credit Items');
                         setTimeout(() => {
                             location.reload();
                         }, 1500);
 
                     }else {
 
-                        showAjaxResponse(response, 'Credit Note Cancel');
+                        showAjaxResponse(response,'Credit Items');
                     }
                 },
                 error: function (xhr) {
