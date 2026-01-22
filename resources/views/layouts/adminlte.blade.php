@@ -18,6 +18,20 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+<style>
+    #ajaxLoader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1051; /* higher than Bootstrap modal */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+</style>
 @yield('style')
 <body class="layout-fixed sidebar-expand-lg">
 <div class="app-wrapper">
@@ -167,6 +181,16 @@
             }
 
         </script>
+        <script>
+            $(document).ajaxStart(function () {
+                $('#ajaxLoader').removeClass('d-none');
+            });
+
+            $(document).ajaxStop(function () {
+                $('#ajaxLoader').addClass('d-none');
+            });
+        </script>
+
     </footer>
 
 </div>
@@ -176,5 +200,9 @@
 <script src="{{ asset('adminlte/dist/js/adminlte.min.js') }}"></script>
 
 @yield('scripts')
+
+<div id="ajaxLoader" class="overlay dark d-none">
+    <i class="fas fa-4x fa-spinner fa-spin text-primary"></i>
+</div>
 </body>
 </html>
