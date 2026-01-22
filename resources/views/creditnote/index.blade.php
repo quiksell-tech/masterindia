@@ -365,6 +365,7 @@
         });
         function cancelCreditNote()
         {
+            let  creditnoteId=document.getElementById('creditnote_id').value;
             $.ajax({
                 url: "<?php echo e(url('api/einvoce')); ?>/" + creditnoteId + "/creditnote-cancel",
                 type: "POST",
