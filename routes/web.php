@@ -125,6 +125,14 @@ Route::middleware('admin.auth')->group(function () {
         Route::post('/{creditnoteId}/store', [CreditnoteController::class, 'store'])
             ->name('creditnote.store');
 
+        // Store / Update credit note + items
+        Route::post('/{order_id}/new-credit-note-order', [CreditnoteController::class, 'createNewCreditNote'])
+            ->name('creditnote.new.order');
+
+        // Store / Update credit note + items
+        Route::post('/{creditnoteId}/add-new-items', [CreditnoteController::class, 'addNewItemsToExitingCreditNote'])
+            ->name('creditnote.add.items');
+
         Route::get('/{order}/invoice-pdf', [InvoiceController::class, 'generateCreditNoteInvoce'])
             ->name('creditnote.invoice.pdf');
     });

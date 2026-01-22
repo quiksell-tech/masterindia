@@ -19,8 +19,8 @@ class EInvoiceController extends Controller
 {
     protected $masterIndiaService;
     protected $masterIndiaEInvoiceTransaction;
-   // protected $company_gstn = '05AAAPG7885R002'; by IShan
-    protected $company_gstn ;
+    // protected $company_gstn = '05AAAPG7885R002'; by IShan
+    protected $company_gstn;
     protected $EINVOICE_COMPANY_GSTN;
 
     public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEInvoiceTransaction $masterIndiaEInvoiceTransaction)
@@ -28,10 +28,10 @@ class EInvoiceController extends Controller
 
         $this->masterIndiaService = $masterIndiaService;
         $this->masterIndiaEInvoiceTransaction = $masterIndiaEInvoiceTransaction;
-        $sysParameter=SystemParameter::getSystemParametersByName('EINVOICE_TEST_USER_GSTN');
-        $this->company_gstn=$sysParameter['EINVOICE_TEST_USER_GSTN'];
-        $sysParameter=SystemParameter::getSystemParametersByName('EINVOICE_COMPANY_GSTN');
-        $this->EINVOICE_COMPANY_GSTN=$sysParameter['EINVOICE_COMPANY_GSTN'];
+        $sysParameter = SystemParameter::getSystemParametersByName('EINVOICE_TEST_USER_GSTN');
+        $this->company_gstn = $sysParameter['EINVOICE_TEST_USER_GSTN'];
+        $sysParameter = SystemParameter::getSystemParametersByName('EINVOICE_COMPANY_GSTN');
+        $this->EINVOICE_COMPANY_GSTN = $sysParameter['EINVOICE_COMPANY_GSTN'];
 
     }
 
@@ -39,7 +39,7 @@ class EInvoiceController extends Controller
     {
 
         $order = MiOrder::where('order_id', $miOrder->order_id)->get();
-        if($order->isEmpty()){
+        if ($order->isEmpty()) {
             return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
         }
         $params = [
@@ -47,19 +47,19 @@ class EInvoiceController extends Controller
             "gstin" => $this->company_gstn,
             "irn" => $order->irn_no,
         ];
-        $data=['order_invoice_number'=>$order->order_invoice_number];
-        $response = $this->masterIndiaService->getEInvoice($data,$params);
+        $data = ['order_invoice_number' => $order->order_invoice_number];
+        $response = $this->masterIndiaService->getEInvoice($data, $params);
     }
 
-    public function generateCreditNote(Request $request,  $creditnoteId)
+    public function generateCreditNote(Request $request, $creditnoteId)
     {
         $creditnote = MiCreditnoteTransaction::with('items')
             ->where('creditnote_id', $creditnoteId)
             ->first();
 
-        if(!$creditnote){
+        if (!$creditnote) {
 
-          return response()->json(['status' => 'error', 'message' => 'Credit Note Order Not Found', 'data' => []]);
+            return response()->json(['status' => 'error', 'message' => 'Credit Note Order Not Found', 'data' => []]);
         }
         if (empty($creditnote->items)) {
 
@@ -79,30 +79,25 @@ class EInvoiceController extends Controller
             ->first();
 
 
-
         if (empty($order)) {
             return response()->json(['status' => 'error', 'message' => 'Related order  is not found', 'data' => []]);
         }
 
-        if(empty($order->billFromAddress->address_id))
-        {
+        if (empty($order->billFromAddress->address_id)) {
             return response()->json(['status' => 'error', 'message' => 'please update bill FROM Address', 'data' => []]);
         }
-        if(empty($order->billToAddress->address_id))
-        {
+        if (empty($order->billToAddress->address_id)) {
             return response()->json(['status' => 'error', 'message' => 'please Update bill TO Address', 'data' => []]);
         }
 
-        if(empty($order->irn_no)  )
-        {
-            return response()->json(['status' => 'error', 'message' => 'IRN Not  Created', 'data' => []]);
+        if (empty($order->irn_no)) {
+            return response()->json(['status' => 'error', 'message' => 'IRN Not  Created For The Original Order', 'data' => []]);
         }
         if (empty($order->billFromParty->party_id)) {
 
             return response()->json(['status' => 'error', 'message' => 'Bill From Party Not Found', 'data' => []]);
         }
-        if(empty($order->billToParty->party_id))
-        {
+        if (empty($order->billToParty->party_id)) {
             return response()->json(['status' => 'error', 'message' => 'Bill to Party Not Found', 'data' => []]);
         }
         // validate GSTN
@@ -112,7 +107,7 @@ class EInvoiceController extends Controller
                 $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billToParty->party_gstn,
                     'sell_invoice_ref_no' => $order->order_invoice_number,
-                  //  'company_gstin' => $this->company_gstn,
+                    //  'company_gstin' => $this->company_gstn,
                     'company_gstin' => $this->EINVOICE_COMPANY_GSTN,
                 ]);
 
@@ -121,7 +116,7 @@ class EInvoiceController extends Controller
                 $valid = $this->masterIndiaService->getGSTINDetailsNew([
                     'buyer_gstin' => $order->billFromParty->party_gstn,
                     'sell_invoice_ref_no' => $this->company_gstn,
-                   // 'company_gstin' => $this->company_gstn,
+                    // 'company_gstin' => $this->company_gstn,
                     'company_gstin' => $this->EINVOICE_COMPANY_GSTN,
                 ]);
             }
@@ -129,7 +124,7 @@ class EInvoiceController extends Controller
 
             if ($valid instanceof Response) {
                 // update psos for error
-                $message=json_decode($valid->getContent(), true)['message'] ?? '';
+                $message = json_decode($valid->getContent(), true)['message'] ?? '';
                 $creditnote->update([
                     'credit_note_status' => 'E',
                     'credit_note_status_message' => $message,
@@ -188,7 +183,7 @@ class EInvoiceController extends Controller
 
             $items_list[] = [
                 "item_serial_number" => $i++,
-                "product_description" => $item->item_code.' '.$item->item_name,
+                "product_description" => $item->item_code . ' ' . $item->item_name,
                 "is_service" => 'N',
                 "hsn_code" => $item->hsn_code,
                 "bar_code" => '',
@@ -213,7 +208,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" =>$this->company_gstn,
+            "user_gstin" => $this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",
@@ -321,13 +316,13 @@ class EInvoiceController extends Controller
             ];
         }
 
-        $data=['creditnote_invoice_no'=>$creditnote->creditnote_invoice_no];
+        $data = ['creditnote_invoice_no' => $creditnote->creditnote_invoice_no];
 
-        $response = $this->masterIndiaService->generateCreditNote($data,$params);
+        $response = $this->masterIndiaService->generateCreditNote($data, $params);
 
         if ($response instanceof Response) {
             //update psos for failure
-            $message=json_decode($response->getContent(), true)['message'] ?? '';
+            $message = json_decode($response->getContent(), true)['message'] ?? '';
             $creditnote->update(
                 [
                     'credit_note_status' => 'E',
@@ -336,7 +331,7 @@ class EInvoiceController extends Controller
             return response()->json(['status' => 'error', 'message' => $message, 'data' => []]);
         }
 
-        $updateData=[
+        $updateData = [
 
             'ack_no' => $response['message']['AckNo'],
             'ack_date' => $response['message']['AckDt'],
@@ -350,7 +345,7 @@ class EInvoiceController extends Controller
             'credit_note_status' => 'C'
         ];
 
-        $isRecordUpdated=$creditnote->update($updateData);
+        $isRecordUpdated = $creditnote->update($updateData);
         if ($isRecordUpdated) {
 
             return response()->json(['status' => 'success', 'message' => 'Credit note has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
@@ -362,8 +357,7 @@ class EInvoiceController extends Controller
 
     public function cancelEInvoice(Request $request, $order_id)
     {
-        if(empty($request->cancel_reason))
-        {
+        if (empty($request->cancel_reason)) {
             return response()->json(['status' => 'error', 'message' => 'Select cancel reason', 'data' => []]);
         }
         $order = MiOrder::where('order_id', $order_id)->first();
@@ -373,17 +367,17 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" =>$this->company_gstn,
+            "user_gstin" => $this->company_gstn,
             "irn" => $order->irn_no,
             "cancel_reason" => $request->cancel_reason,
             "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
         ];
 
-        $data=['order_invoice_number'=>$order->order_invoice_number];
-        $response = $this->masterIndiaService->cancelEInvoice($data,$params);
+        $data = ['order_invoice_number' => $order->order_invoice_number];
+        $response = $this->masterIndiaService->cancelEInvoice($data, $params);
         if ($response instanceof Response) {
             //update psos for failure
-            $message=json_decode($response->getContent(), true)['message'] ?? '';
+            $message = json_decode($response->getContent(), true)['message'] ?? '';
             $order->update(
                 [
                     'credit_note_status' => 'E',
@@ -401,11 +395,10 @@ class EInvoiceController extends Controller
 
     public function cancelCreditNote(Request $request, $creditnoteId)
     {
-        if(empty($request->cancel_reason))
-        {
+        if (empty($request->cancel_reason)) {
             return response()->json(['status' => 'error', 'message' => 'Select cancel reason', 'data' => []]);
         }
-        $order = MiCreditnoteItem::where('order_id', $creditnoteId)->first();
+        $order = MiCreditnoteTransaction::where('creditnote_id', $creditnoteId)->first();
         if (empty($order)) {
 
             return response()->json(['status' => 'error', 'message' => 'Credit note is not found', 'data' => []]);
@@ -413,17 +406,17 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" =>$this->company_gstn,
-            "irn" => $order->irn_no,
+            "user_gstin" => $this->company_gstn,
+            "irn" => $order->creditnote_irn_no,
             "cancel_reason" => $request->cancel_reason,
             "cancel_remarks" => $request->cancel_remarks ?? 'Wrong Entry'
         ];
 
-        $data=['order_invoice_number'=>$order->creditnote_invoice_no];
-        $response = $this->masterIndiaService->cancelEInvoice($data,$params);
+        $data = ['order_invoice_number' => $order->creditnote_invoice_no];
+        $response = $this->masterIndiaService->cancelEInvoice($data, $params);
         if ($response instanceof Response) {
             //update psos for failure
-            $message=json_decode($response->getContent(), true)['message'] ?? '';
+            $message = json_decode($response->getContent(), true)['message'] ?? '';
             $order->update(
                 [
                     'credit_note_status' => 'E',
@@ -456,7 +449,7 @@ class EInvoiceController extends Controller
             ->where('order_id', $order_id)
             ->first();
 
-        if(($order->irn_status=='C' || $order->irn_status=='X') && $order->eway_status=='C'){
+        if (($order->irn_status == 'C' || $order->irn_status == 'X') && $order->eway_status == 'C') {
 
             return response()->json(['status' => 'error', 'message' => 'Please cancel Eway first than Create E-invoice', 'data' => []]);
         }
@@ -473,16 +466,13 @@ class EInvoiceController extends Controller
         if (empty($order)) {
             return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
         }
-        if(empty($order->billFromAddress->address_id))
-        {
+        if (empty($order->billFromAddress->address_id)) {
             return response()->json(['status' => 'error', 'message' => 'please update bill FROM Address', 'data' => []]);
         }
-        if(empty($order->billToAddress->address_id))
-        {
+        if (empty($order->billToAddress->address_id)) {
             return response()->json(['status' => 'error', 'message' => 'please Update bill TO Address', 'data' => []]);
         }
-        if( $order->irn_status=='C' )
-        {
+        if ($order->irn_status == 'C') {
             return response()->json(['status' => 'error', 'message' => 'IRN Already Created', 'data' => []]);
         }
 
@@ -508,12 +498,12 @@ class EInvoiceController extends Controller
 
             if ($valid instanceof Response) {
                 // update psos for error
-                    $message=json_decode($valid->getContent(), true)['message'] ?? '';
+                $message = json_decode($valid->getContent(), true)['message'] ?? '';
                 $order->update([
                     'irn_status' => 'E',
-                    'irn_status_message' =>$message
+                    'irn_status_message' => $message
                 ]);
-                return response()->json(['status' => 'error', 'message' =>$message, 'data' => []]);
+                return response()->json(['status' => 'error', 'message' => $message, 'data' => []]);
             }
 
             if ($valid['gstin_status'] != 'active') {
@@ -565,7 +555,7 @@ class EInvoiceController extends Controller
 
             $items_list[] = [
                 "item_serial_number" => $i++,
-                "product_description" => $item->item_code.' '.$item->item_name,
+                "product_description" => $item->item_code . ' ' . $item->item_name,
                 "is_service" => 'N',
                 "hsn_code" => $item->hsn_code,
                 "bar_code" => '',
@@ -590,7 +580,7 @@ class EInvoiceController extends Controller
 
         $params = [
 
-            "user_gstin" =>$this->company_gstn,
+            "user_gstin" => $this->company_gstn,
             "data_source" => "erp",
             "transaction_details" => [
                 "supply_type" => "B2B",
@@ -699,13 +689,13 @@ class EInvoiceController extends Controller
             ];
         }
 //        print_r($params);
-       // die;
-        $data=['order_invoice_number'=>$order->order_invoice_number];
-        $response = $this->masterIndiaService->generateEInvoice($data,$params);
+        // die;
+        $data = ['order_invoice_number' => $order->order_invoice_number];
+        $response = $this->masterIndiaService->generateEInvoice($data, $params);
 
         if ($response instanceof Response) {
             //update psos for failure
-            $message=json_decode($response->getContent(), true)['message'] ?? '';
+            $message = json_decode($response->getContent(), true)['message'] ?? '';
             $order->update(
                 [
                     'irn_status' => 'E',
@@ -735,7 +725,7 @@ class EInvoiceController extends Controller
                 'einvoice_pdf_url' => $response['message']['EinvoicePdf'],
                 'irn_status' => 'C',
                 'irn_status_message' => 'E-invoice has been created ' . ($response['display_message'] ?? ''),
-                'order_invoice_number'=>$invoiceNumberForApi,
+                'order_invoice_number' => $invoiceNumberForApi,
             ]);
 
             return response()->json(['status' => 'success', 'message' => 'E-Invoice has been created :' . ($response['display_message'] ?? ''), 'data' => []]);
@@ -743,6 +733,7 @@ class EInvoiceController extends Controller
 
         return response()->json(['status' => 'error', 'message' => 'E-Invoice created but failed to save response', 'data' => []]);
     }
+
     private function getNextSequence(string $previous)
     {
         $parts = explode('-', $previous);
@@ -788,75 +779,73 @@ class EInvoiceController extends Controller
         ])
             ->where('order_id', $order_id)
             ->first();
-        if(!$order) {
+        if (!$order) {
             return response()->json(['status' => 'error', 'message' => 'Order Not found', 'data' => []]);
         }
-        if(empty($items)) {
+        if (empty($items)) {
             return response()->json(['status' => 'error', 'message' => 'Items are not added to order ', 'data' => []]);
         }
 
-        if(empty($order->billFromParty->party_id))
-        {
+        if (empty($order->billFromParty->party_id)) {
             return response()->json(['status' => 'error', 'message' => 'please update order FROM Party', 'data' => []]);
         }
-        if(empty($order->billToParty->party_id))
-        {
+        if (empty($order->billToParty->party_id)) {
             return response()->json(['status' => 'error', 'message' => 'please update order Bill to Party', 'data' => []]);
         }
-        if(empty($order->billFromAddress->address_id))
-        {
+        if (empty($order->billFromAddress->address_id)) {
             return response()->json(['status' => 'error', 'message' => 'please update bill FROM Address', 'data' => []]);
         }
-        if(empty($order->billToAddress->address_id))
-        {
+        if (empty($order->billToAddress->address_id)) {
             return response()->json(['status' => 'error', 'message' => 'please Update bill TO Address', 'data' => []]);
         }
 
         /** 2. Get or create credit note */
         $creditnote = MiCreditnoteTransaction::where('order_id', $order_id)->first();
 
-        if (!$creditnote) {
+        if (empty($creditnote)) {
 
             $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumber('CREW');
 
             $creditnote = MiCreditnoteTransaction::create([
-                'creditnote_invoice_no'  => $creditnoteInvoice['invoice_no'],
-                'financial_year'  => $creditnoteInvoice['financial_year'],
-                'sequence_no'  => $creditnoteInvoice['sequence_no'],
-                'order_id'            => $order_id,
+                'creditnote_invoice_no' => $creditnoteInvoice['invoice_no'],
+                'financial_year' => $creditnoteInvoice['financial_year'],
+                'sequence_no' => $creditnoteInvoice['sequence_no'],
+                'order_id' => $order_id,
                 'order_invoice_number' => $order->order_invoice_number,
-                'credit_note_status'  => 'N',
-                'return_type'  => 'SALES_RETURN',
-                'credit_note_date'    => now(),
+                'credit_note_status' => 'N',
+                'return_type' => 'SALES_RETURN',
+                'credit_note_date' => now(),
             ]);
+
+
+            /** 3. Delete existing credit note items */
+            //MiCreditnoteItem::where('creditnote_id', $creditnote->creditnote_id)->delete();
+
+            /** 4. Insert items from order items */
+            $creditnoteItems = [];
+
+            foreach ($items as $item) {
+                $creditnoteItems[] = [
+                    'creditnote_id' => $creditnote->creditnote_id,
+                    'item_id' => $item->item_id,
+                    'item_name' => $item->item_name,
+                    'item_description' => $item->item_description,
+                    'item_code' => $item->item_code,
+                    'hsn_code' => $item->hsn_code,
+                    'item_unit' => $item->item_unit,
+                    'total_item_quantity' => $item->total_item_quantity,
+                    'price_per_unit' => $item->price_per_unit,
+                    'tax_percentage' => $item->tax_percentage,
+                    'taxable_amount' => $item->taxable_amount,
+                    'after_tax_value' => $item->after_tax_value,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            MiCreditnoteItem::insert($creditnoteItems);
+            return response()->json(['status' => 'success', 'message' => 'CreditNote data has been inserted', 'data' => ['creditnote_id' => $creditnote->creditnote_id]]);
         }
+        return response()->json(['status' => 'error', 'message' => 'CreditNote data already inserted', 'data' =>[] ] );
 
-        /** 3. Delete existing credit note items */
-        MiCreditnoteItem::where('creditnote_id', $creditnote->creditnote_id)->delete();
-
-        /** 4. Insert items from order items */
-        $creditnoteItems = [];
-
-        foreach ($items as $item) {
-            $creditnoteItems[] = [
-                'creditnote_id'        => $creditnote->creditnote_id,
-                'item_id'              => $item->item_id,
-                'item_name'            => $item->item_name,
-                'item_description'     => $item->item_description,
-                'item_code'            => $item->item_code,
-                'hsn_code'             => $item->hsn_code,
-                'item_unit'            => $item->item_unit,
-                'total_item_quantity'  => $item->total_item_quantity,
-                'price_per_unit'       => $item->price_per_unit,
-                'tax_percentage'       => $item->tax_percentage,
-                'taxable_amount'       => $item->taxable_amount,
-                'after_tax_value'      => $item->after_tax_value,
-                'created_at'           => now(),
-                'updated_at'           => now(),
-            ];
-        }
-
-        MiCreditnoteItem::insert($creditnoteItems);
-        return response()->json(['status' => 'success', 'message' => 'CreditNote data has been inserted', 'data' => ['creditnote_id'=>$creditnote->creditnote_id] ]);
     }
 }

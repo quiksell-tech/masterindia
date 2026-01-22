@@ -26,6 +26,7 @@
                         <th>Total Tax</th>
                         <th>Total After Tax</th>
                         <th>credit_note_date</th>
+                        <th>Status</th>
                         <th>Invocie No</th>
                         <th>Edit</th>
                         <th colspan="2" class="text-center" style="width: 100px;">Action</th>
@@ -61,6 +62,21 @@
                             </td>
 
                             <td>
+                                <strong>
+                                    {{
+                                        match($order->credit_note_status) {
+                                            'C' => 'Created',
+                                            'X' => 'Cancelled',
+                                            'E' => 'Error',
+                                            'M' => 'Modified',
+                                            default => 'NEW',
+                                        }
+                                    }}
+                                </strong>
+
+                            </td>
+
+                            <td>
                                 <strong>{{ $order->order_invoice_number }}</strong>
                             </td>
 
@@ -86,15 +102,22 @@
 
                                     <a href="javascript:void(0)"
                                        class="btn btn-sm btn-info"
-                                       onclick="openCancelEInvoiceModal('{{ $order->order_id }}')">
+                                       onclick="openCancelEInvoiceModal('{{ $order->creditnote_id }}')">
                                         <i class="fas fa-file-invoice"></i> Cancel Credit Note
                                     </a>
-                                    <a href="{{ $order->creditnote_pdf_url }}" target="_blank">
-                                    <i class="fas fa-road"></i>pdf
-                                </a>
                                 @endif
-                            </td>
+                                @if(!empty($order->creditnote_pdf_url))
+                                    <a href="{{ $order->creditnote_pdf_url }}" target="_blank">
+                                        <i class="fas fa-road"></i>pdf</a>
+                                @endif
 
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-info"
+                                   onclick="createNewOder('{{ $order->order_id }}')">
+                                    <i class="fas fa-file-invoice"></i>New Order
+                                </a>
+
+                            </td>
 
                         </tr>
                     @empty
@@ -236,7 +259,7 @@
             <form id="cancelEInvoiceForm">
                 @csrf
 
-                <input type="hidden" name="einvoice_order_id" id="einvoice_order_id">
+                <input type="hidden" name="creditnote_id" id="creditnote_id">
 
                 <div class="modal-content">
                     <div class="modal-header bg-info">
@@ -286,7 +309,7 @@
                             Close
                         </button>
 
-                        <button type="button" class="btn btn-info" id="cancelEinvoiceBtn">
+                        <button type="button" class="btn btn-info" id="cancelEinvoiceBtn" onclick="cancelCreditNote()">
                             <i class="fas fa-ban"></i> Cancel E-Invoice
                         </button>
                     </div>
@@ -299,10 +322,10 @@
 @section('scripts')
     <script>
 
-        function createCreditNote(orderId)
+        function createCreditNote(creditnoteId)
         {
             $.ajax({
-                url: "<?php echo e(url('api/einvoce')); ?>/" + orderId + "/creditnote-generate",
+                url: "<?php echo e(url('api/einvoce')); ?>/" + creditnoteId + "/creditnote-generate",
                 type: "POST",
 
                 success: function (response) {
@@ -327,9 +350,9 @@
                 }
             });
         }
-        function openCancelEInvoiceModal(orderId) {
+        function openCancelEInvoiceModal(creditnoteId) {
 
-            document.getElementById('einvoice_order_id').value = orderId;
+            document.getElementById('creditnote_id').value = creditnoteId;
             document.getElementById('cancel_reason').value = '';
             document.getElementById('cancel_remarks').value = '';
             document.getElementById('remarks_count').innerText = 0;
@@ -340,24 +363,24 @@
         document.getElementById('cancel_remarks').addEventListener('input', function () {
             document.getElementById('remarks_count').innerText = this.value.length;
         });
-        function cancelCreditNote(orderId)
+        function cancelCreditNote()
         {
             $.ajax({
-                url: "<?php echo e(url('api/einvoce')); ?>/" + orderId + "/creditnote-cancel",
+                url: "<?php echo e(url('api/einvoce')); ?>/" + creditnoteId + "/creditnote-cancel",
                 type: "POST",
-
+                data: $('#cancelEInvoiceForm').serialize(),
                 success: function (response) {
 
                     if (response.status === 'success') {
 
-                        showAjaxResponse(response, 'Credit Note Created');
+                        showAjaxResponse(response, 'Credit Note Cancel');
                         setTimeout(() => {
                             location.reload();
                         }, 1500);
 
                     }else {
 
-                        showAjaxResponse(response, 'Credit Note Failed');
+                        showAjaxResponse(response, 'Credit Note Cancel');
                     }
                 },
                 error: function (xhr) {
@@ -368,6 +391,36 @@
                 }
             });
         }
+
+        function createNewOder(order_id)
+        {
+            $.ajax({
+                url: "<?php echo e(url('creditnote')); ?>/" + order_id + "/new-credit-note-order",
+                type: "POST",
+                data: $('#cancelEInvoiceForm').serialize(),
+                success: function (response) {
+
+                    if (response.status === 'success') {
+
+                        showAjaxResponse(response, 'Credit Note Cancel');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+
+                    }else {
+
+                        showAjaxResponse(response, 'Credit Note Cancel');
+                    }
+                },
+                error: function (xhr) {
+                    showAjaxResponse({
+                        status: 'error',
+                        message: xhr.responseJSON?.message || 'Something went wrong'
+                    }, 'Action Failed');
+                }
+            });
+        }
+
         function getInvoiceData(orderId)
         {
             // Show modal first

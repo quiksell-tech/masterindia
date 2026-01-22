@@ -1,179 +1,186 @@
 @extends('layouts.adminlte')
 
 @section('content')
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h3 class="m-0">
+                        Credit Note
+                        <small class="text-muted">#{{ $creditnote->creditnote_invoice_no }}</small>
+                    </h3>
+                </div>
+                <div class="col-sm-6">
+                    <h4 class="m-0">
+                       Status:
+                        <small class="text-muted">
+                            {{
+                                match($creditnote->credit_note_status) {
+                                    'C' => 'Created',
+                                    'X' => 'Cancelled',
+                                    'E' => 'Error',
+                                    'M' => 'Modified',
+                                    default => 'NEW',
+                                }
+                            }}
+                        </small>
+                    </h4>
+                </div>
+
+                <div class="col-sm-6 text-right">
+                <span class="badge badge-info p-2">
+                    Order #{{ $creditnote->order_id }}
+                </span>
+                </div>
+            </div>
+            @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible">
+
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </div>
+    </div>
+
     <div class="container-fluid">
 
-        {{-- Order / Credit Note Details --}}
-        <div class="card card-info">
+        {{-- Credit Note Details --}}
+        <div class="card card-outline card-info">
             <div class="card-header">
-                <h3 class="card-title">Credit Note Details <span>#{{ $creditnote->order_id }}</span></h3>
+                <h3 class="card-title">
+                    <i class="fas fa-file-invoice"></i> Credit Note Details
+                </h3>
             </div>
 
             <div class="card-body row">
                 <div class="col-md-4">
-                    <label>Credit Note No.</label>
-                    <input type="text" class="form-control" value="{{ $creditnote->creditnote_invoice_no }}" readonly>
+                    <label class="text-muted">Credit Note No</label>
+                    <input class="form-control form-control-sm"
+                           value="{{ $creditnote->creditnote_invoice_no }}" readonly>
                 </div>
 
+
                 <div class="col-md-4">
-                    <label>Invoice No</label>
-                    <input type="text" class="form-control" value="{{ $creditnote->order_invoice_number }}" readonly>
+                    <label class="text-muted">Invoice No</label>
+                    <input class="form-control form-control-sm"
+                           value="{{ $creditnote->order_invoice_number }}" readonly>
                 </div>
             </div>
         </div>
 
-        {{-- Items --}}
         <form method="POST" action="{{ route('creditnote.store', $creditnote->creditnote_id) }}">
             @csrf
-            {{-- Credit Note Form Fields --}}
-            <div class="card card-secondary">
+
+            {{-- Credit Note Info --}}
+            <div class="card card-outline card-secondary">
                 <div class="card-header">
-                    <h3 class="card-title">Credit Note Information</h3>
+                    <h3 class="card-title">
+                        <i class="fas fa-calendar-alt"></i> Credit Note Information
+                    </h3>
                 </div>
 
                 <div class="card-body row">
-
-                    {{-- Credit Note Date --}}
-{{--                    <div class="col-md-3">--}}
-{{--                        <div class="form-group">--}}
-{{--                            <label>Return Date</label>--}}
-
-{{--                            <input type="text"--}}
-{{--                                   name="creditnote_invoice_no"--}}
-{{--                                   id="creditnote_invoice_no"--}}
-{{--                                   class="form-control"--}}
-{{--                                   value="{{ old('return_date', optional($creditnote->credit_note_date)->format('d-M-Y')) }}"--}}
-{{--                                   placeholder="DD-MMM-YYYY"--}}
-{{--                                   required>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-
-                    {{-- Credit Note Date --}}
                     <div class="col-md-3">
-
-                        <div class="form-group">
-                            <label>Return Date</label>
-
-                            <input type="text"
-                                   name="return_date"
-                                   id="return_date"
-                                   class="form-control"
-                                   value="{{ old('return_date', optional($creditnote->return_date)->format('d-M-Y')) }}"
-                                   placeholder="DD-MMM-YYYY"
-                                   required>
-                        </div>
+                        <label>Return Date</label>
+                        <input type="text"
+                               id="return_date"
+                               name="return_date"
+                               class="form-control form-control-sm"
+                               value="{{ old('return_date', optional($creditnote->return_date)->format('d-M-Y')) }}"
+                               required>
                     </div>
 
-                    {{-- GST Invoice No --}}
-{{--                    <div class="col-md-3">--}}
-{{--                        <div class="form-group">--}}
-{{--                            <label>GST Invoice No</label>--}}
-{{--                            <input type="text"--}}
-{{--                                   name="gst_invoice_no"--}}
-{{--                                   class="form-control"--}}
-{{--                                   value="{{ old('gst_invoice_no', $creditnote->gst_invoice_no) }}"--}}
-{{--                                   placeholder="GST Invoice Number">--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-
-                    {{-- Return Type --}}
                     <div class="col-md-3">
-                        <div class="form-group">
-                            <label>Return Type</label>
-                            <select name="return_type" class="form-control" required>
-
-                                <option value="SALES_RETURN" {{ $creditnote->return_type === 'SALES_RETURN' ? 'selected' : '' }}>
-                                    Sales Return
-                                </option>
-{{--                                <option value="PARTIAL" {{ $creditnote->return_type === 'PARTIAL' ? 'selected' : '' }}>--}}
-{{--                                    Partial Return--}}
-{{--                                </option>--}}
-                            </select>
-                        </div>
+                        <label>Return Type</label>
+                        <select name="return_type" class="form-control form-control-sm">
+                            <option value="SALES_RETURN" selected>Sales Return</option>
+                        </select>
                     </div>
 
-                    {{-- Return Date --}}
                     <div class="col-md-3">
-                        <div class="form-group">
-                            <label>Credit Note Date</label>
-                            <input type="text"
-                                   name="credit_note_date"
-                                   id="credit_note_date"
-                                   class="form-control"
-                                   value="{{ old('credit_note_date', optional($creditnote->credit_note_date)->format('d-M-Y')) }}"
-                                   placeholder="DD-MMM-YYYY"
-                                   required>
-                        </div>
+                        <label>Credit Note Date</label>
+                        <input type="text"
+                               id="credit_note_date"
+                               name="credit_note_date"
+                               class="form-control form-control-sm"
+                               value="{{ old('credit_note_date', optional($creditnote->credit_note_date)->format('d-M-Y')) }}"
+                               required>
                     </div>
-
                 </div>
             </div>
 
-            <div class="card card-primary">
+            {{-- Credit Note Items --}}
+            <div class="card card-outline card-primary">
                 <div class="card-header">
-                    <h3 class="card-title">Credit Note Items</h3>
+                    <h3 class="card-title">
+                        <i class="fas fa-boxes"></i> Credit Note Items
+                    </h3>
                 </div>
 
                 <div class="card-body table-responsive">
-                    <table class="table table-bordered" id="itemsTable">
-                        <thead class="thead-light">
+                    <table class="table table-bordered table-hover table-sm">
+                        <thead class="bg-light text-center">
                         <tr>
                             <th>Item</th>
-                            <th>Item Code</th>
+                            <th>Code</th>
                             <th>HSN</th>
-                            <th>Qty</th>
+                            <th width="80">Qty</th>
                             <th>Unit</th>
-                            <th>Price / Unit</th>
-                            <th>Taxable Amount</th>
-                            <th>After Tax Value</th>
-                            <th>Action</th>
+                            <th width="120">Price</th>
+                            <th width="140">Taxable</th>
+                            <th width="140">After Tax</th>
+                            <th width="60">❌</th>
                         </tr>
                         </thead>
                         <tbody>
                         @foreach($creditnote->items as $index => $item)
                             <tr>
-                                <td>
+                                <td class="text-center">
                                     {{ $item->item_name }}
-                                    <input type="hidden" name="items[{{ $index }}][item_name]" value="{{ $item->item_name }}">
+
                                     <input type="hidden" name="items[{{ $index }}][item_id]" value="{{ $item->item_id }}">
-                                    <input type="hidden" name="items[{{ $index }}][tax_percentage]" value="{{ $item->tax_percentage }}">
-                                </td>
-
-                                <td>
-                                    {{ $item->item_code }}
+                                    <input type="hidden" name="items[{{ $index }}][item_name]" value="{{ $item->item_name }}">
                                     <input type="hidden" name="items[{{ $index }}][item_code]" value="{{ $item->item_code }}">
+                                    <input type="hidden" name="items[{{ $index }}][hsn_code]" value="{{ $item->hsn_code }}">
+                                    <input type="hidden" name="items[{{ $index }}][item_unit]" value="{{ $item->item_unit }}">
+
+                                    <input type="hidden"
+                                           name="items[{{ $index }}][tax_percentage]"
+                                           class="tax_percentage"
+                                           value="{{ $item->tax_percentage }}">
+
+                                    <input type="hidden"
+                                           name="items[{{ $index }}][price_per_unit]"
+                                           class="price"
+                                           value="{{ $item->price_per_unit }}">
                                 </td>
 
-                                <td>
-                                    {{ $item->hsn_code }}
-                                    <input type="hidden" name="items[{{ $index }}][hsn_code]" value="{{ $item->hsn_code }}">
-                                </td>
+                                <td class="text-center">{{ $item->item_code }}</td>
+                                <td class="text-center">{{ $item->hsn_code }}</td>
 
                                 <td>
                                     <input type="number"
                                            name="items[{{ $index }}][total_item_quantity]"
-                                           class="form-control qty"
+                                           class="form-control form-control-sm qty text-right"
                                            value="{{ $item->total_item_quantity }}"
                                            min="1">
                                 </td>
 
-                                <td>
-                                    {{ $item->item_unit }}
-                                    <input type="hidden" name="items[{{ $index }}][item_unit]" value="{{ $item->item_unit }}">
-                                </td>
+                                <td class="text-center">{{ $item->item_unit }}</td>
 
-                                <td>
-                                    <input type="number"
-                                           name="items[{{ $index }}][price_per_unit]"
-                                           class="form-control price"
-                                           value="{{ $item->price_per_unit }}"
-                                           readonly>
-                                </td>
+
+                                <td class="text-center">{{ $item->price_per_unit }}</td>
+
 
                                 <td>
                                     <input type="number"
                                            name="items[{{ $index }}][taxable_amount]"
-                                           class="form-control taxable_amount"
+                                           class="form-control form-control-sm taxable_amount text-right"
                                            value="{{ $item->taxable_amount }}"
                                            readonly>
                                 </td>
@@ -181,31 +188,42 @@
                                 <td>
                                     <input type="number"
                                            name="items[{{ $index }}][after_tax_value]"
-                                           class="form-control after_tax_value"
+                                           class="form-control form-control-sm after_tax_value text-right"
                                            value="{{ $item->after_tax_value }}"
                                            readonly>
                                 </td>
 
-                                <td>
-                                    <button type="button" class="btn btn-danger btn-sm removeRow">
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-danger btn-xs removeRow">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
                             </tr>
                         @endforeach
                         </tbody>
+
                     </table>
                 </div>
 
-                <div class="card-footer text-right">
+                <div class="card-footer d-flex justify-content-between">
+                    @if($creditnote->credit_note_status!='C')
+                    <button type="button"
+                            class="btn btn-outline-primary"
+                            onclick="addNewItems('{{ $creditnote->creditnote_id }}')">
+                        <i class="fas fa-plus-circle"></i> Add New Items
+                    </button>
+
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-save"></i> Save Credit Note
                     </button>
+                        @endif
                 </div>
             </div>
         </form>
     </div>
+
 @endsection
+
 @section('scripts')
     <script>
         $(document).on('input', '.qty', function () {
@@ -230,10 +248,10 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            flatpickr("#credit_note_date", {
-                dateFormat: "d-M-Y",
-                allowInput: true
-            });
+            // flatpickr("#credit_note_date", {
+            //     dateFormat: "d-M-Y",
+            //     allowInput: true
+            // });
         });
         document.addEventListener('DOMContentLoaded', function () {
             flatpickr("#return_date", {
@@ -241,6 +259,37 @@
                 allowInput: true
             });
         });
+
+        function addNewItems($creditnoteId)
+        {
+            $.ajax({
+                url: "<?php echo e(url('creditnote')); ?>/" + $creditnoteId + "/add-new-items",
+                type: "POST",
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function (response) {
+
+                    if (response.status === 'success') {
+
+                        showAjaxResponse(response, 'Credit Note Cancel');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+
+                    }else {
+
+                        showAjaxResponse(response, 'Credit Note Cancel');
+                    }
+                },
+                error: function (xhr) {
+                    showAjaxResponse({
+                        status: 'error',
+                        message: xhr.responseJSON?.message || 'Something went wrong'
+                    }, 'Action Failed');
+                }
+            });
+        }
     </script>
 
 @endsection
