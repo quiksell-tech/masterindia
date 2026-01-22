@@ -108,8 +108,7 @@
                                    name="vehicle_no"
                                    id="vehicle_no"
                                    class="form-control mb-3"
-                                   value="{{$order->vehicle_no}}"
-                            >
+                                   value="{{$order->vehicle_no}}">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -119,8 +118,7 @@
                                    name="transporter_document_no"
                                    id="transporter_document_no"
                                    class="form-control mb-3"
-                                   value="{{$order->transporter_document_no}}"
-                                {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }} >
+                                   value="{{$order->transporter_document_no}}">
                         </div>
                     </div>
                     <div class="col-md-3">
