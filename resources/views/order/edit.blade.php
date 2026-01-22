@@ -164,7 +164,7 @@
                                            class="form-control party-search"
                                            placeholder="Search Party / GSTN"
                                            data-target="bill_from_address_id"
-                                           data-party-input="bill_from_party_id" value="{{ $order->billFromParty->party_trade_name ?? '-' }}-(  {{ $order->billToParty->party_gstn ?? '-' }})"
+                                           data-party-input="bill_from_party_id" value="{{ $order->billFromParty->party_trade_name ?? '-' }}-(  {{ $order->billFromParty->party_gstn ?? '-' }})"
                                         {{ in_array('create_irn', $allowedActions) ? '' : 'readonly' }}>
 
                                     <input type="hidden"

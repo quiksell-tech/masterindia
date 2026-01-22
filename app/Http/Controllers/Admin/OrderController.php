@@ -289,7 +289,7 @@ class OrderController extends Controller
                 $order['transportation_date'] =$transportation_date;
             }
             $validated = $request->validate($rules);
-            $data['transporter_id']       = $validated['transporter_id'];
+            $data['transporter_id'] = $validated['transporter_id'];
             $order->update($data);
 
             // ✅ Redirect back to edit page
