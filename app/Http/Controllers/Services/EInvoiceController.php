@@ -214,7 +214,7 @@ class EInvoiceController extends Controller
                 "supply_type" => "B2B",
                 "charge_type" => "N",
                 "igst_on_intra" => "N",
-                "ecommerce_gstin" => config('einvoice.ecommerce_gstin'),
+                "ecommerce_gstin" => '',
             ],
             "document_details" => [
                 "document_type" => "CRN",
@@ -586,7 +586,7 @@ class EInvoiceController extends Controller
                 "supply_type" => "B2B",
                 "charge_type" => "N",
                 "igst_on_intra" => "N",
-                "ecommerce_gstin" => config('einvoice.ecommerce_gstin'),
+                "ecommerce_gstin" =>'',
             ],
             "document_details" => [
                 "document_type" => "INV",
