@@ -804,7 +804,7 @@ class EInvoiceController extends Controller
 
         if (empty($creditnote)) {
 
-            $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumber('CREW');
+            $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumberForCreditNote('CREW');
 
             $creditnote = MiCreditnoteTransaction::create([
                 'creditnote_invoice_no' => $creditnoteInvoice['invoice_no'],

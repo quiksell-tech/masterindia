@@ -66,9 +66,14 @@ class OrderController extends Controller
             'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
             'vehicle_no' => [
                 'nullable',
-                Rule::requiredIf(fn () => $request->transporter_id != 'NO_DETAIL'),
+                Rule::requiredIf(fn () => $request->transporter_id !== 'NO_DETAIL'),
                 'string',
-                'max:20'
+                'max:20',
+                function ($attribute, $value, $fail) {
+                    if (!$this->isValidIndianVehicleNumber($value)) {
+                        $fail('Invalid Indian vehicle number.');
+                        }
+                    },
                 ],
             ];
 
@@ -81,6 +86,7 @@ class OrderController extends Controller
                 Rule::unique('mi_orders', 'order_invoice_number'),
             ];
         }
+
 
         $validated = $request->validate($rules);
         $order = [];
@@ -275,9 +281,14 @@ class OrderController extends Controller
                 'transporter_id'     => ['required', 'string'],
                 'vehicle_no' => [
                     'nullable',
-                    Rule::requiredIf(fn () => $request->transporter_id == 'NO_GSTN'),
+                    Rule::requiredIf(fn () => $request->transporter_id !== 'NO_DETAIL'),
                     'string',
-                    'max:20'
+                    'max:20',
+                    function ($attribute, $value, $fail) {
+                        if (!$this->isValidIndianVehicleNumber($value)) {
+                            $fail('Invalid Indian vehicle number.');
+                        }
+                    },
                 ],
                 ];
             $data['transporter_name'] =$request->transporter_name;
@@ -309,9 +320,14 @@ class OrderController extends Controller
             'supply_type'          => ['required', Rule::in(['outward', 'inward'])],
             'vehicle_no' => [
                 'nullable',
-                Rule::requiredIf(fn () => $request->transporter_id == 'NO_GSTN'),
+                Rule::requiredIf(fn () => $request->transporter_id !== 'NO_DETAIL'),
                 'string',
-                'max:20'
+                'max:20',
+                function ($attribute, $value, $fail) {
+                    if (!$this->isValidIndianVehicleNumber($value)) {
+                        $fail('Invalid Indian vehicle number.');
+                    }
+                },
             ],
         ];
 
@@ -442,6 +458,11 @@ class OrderController extends Controller
             'email'        => $email,
             'phone'        => $phone,
         ])->render();
+    }
+    private function isValidIndianVehicleNumber(string $vehicleNo): bool
+    {
+        $vehicleNo = strtoupper(str_replace(' ', '', $vehicleNo));
+        return preg_match('/^[A-Z]{2}\d{1,2}[A-Z]{0,2}\d{1,4}$/', $vehicleNo) === 1;
     }
 
 

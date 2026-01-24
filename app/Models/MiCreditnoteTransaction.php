@@ -100,7 +100,16 @@ class MiCreditnoteTransaction extends Model
         }
         return $totalAfterTax;
     }
-    public static function generateInvoiceNumber(string $prefix = 'HREW'): array
+    public static function incrementInvoiceSuffix(string $invoice)
+    {
+        $lastChar = substr($invoice, -1);
+        if ($lastChar >= 'A' && $lastChar < 'Z') {
+            return substr($invoice, 0, -1) . chr(ord($lastChar) + 1);
+        }
+        return $invoice;
+    }
+
+    public static function generateInvoiceNumberForCreditNote(string $prefix = 'HREW'): array
     {
         $fy = self::getFinancialYearCode();
 

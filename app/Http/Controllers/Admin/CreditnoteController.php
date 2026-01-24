@@ -67,15 +67,13 @@ class CreditnoteController extends Controller
 
             if ($creditnote->credit_note_status=='X' && !empty($creditnote->creditnote_irn_no) )
             {
-                $creditnote_invoice_no= $creditnote->creditnote_invoice_no.'A';
+                $creditnote_invoice_no= MiCreditnoteTransaction::incrementInvoiceSuffix($creditnote->creditnote_invoice_no);
                 $creditnoteUpdateData['creditnote_invoice_no']=$creditnote_invoice_no;
                 $creditnoteUpdateData['credit_note_status']='M';
 
             }
 
-
             $creditnote->update($creditnoteUpdateData);
-
             /** Delete all old items */
             MiCreditnoteItem::where('creditnote_id', $creditnoteId)->delete();
 
@@ -129,7 +127,7 @@ class CreditnoteController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Order Not found', 'data' => []]);
         }
 
-        $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumber('CREW');
+        $creditnoteInvoice = MiCreditnoteTransaction::generateInvoiceNumberForCreditNote('CREW');
         $creditnote = MiCreditnoteTransaction::create([
             'creditnote_invoice_no' => $creditnoteInvoice['invoice_no'],
             'financial_year' => $creditnoteInvoice['financial_year'],
@@ -223,7 +221,8 @@ class CreditnoteController extends Controller
         // create new creditnote_invoice_no by add A if IRN is Cancelled
         if ($creditnote->credit_note_status=='X')
         {
-            $creditnote_invoice_no=$creditnote->creditnote_invoice_no.'A';
+            $creditnote_invoice_no= MiCreditnoteTransaction::incrementInvoiceSuffix($creditnote->creditnote_invoice_no);
+
             $creditnote->update([
                 'credit_note_status' => 'M',
                 'creditnote_invoice_no' => $creditnote_invoice_no,
@@ -238,7 +237,32 @@ class CreditnoteController extends Controller
             ]
         ]);
     }
+    private function getNextSequence(string $previous)
+    {
+        $parts = explode('-', $previous);
+        $count = count($parts);
 
+        // Case 1: Initial invoice number (3 parts)
+        if ($count === 3) {
+            return $previous . '-01';
+        }
+
+        // Case 2: Already has a sequence (4 or more parts)
+        if ($count >= 4) {
+            $seq = array_pop($parts); // last part is sequence
+
+            // Ensure the last part is numeric
+            if (!is_numeric($seq)) {
+                return false; // invalid format
+            }
+
+            $nextSeq = str_pad(((int)$seq) + 1, 2, '0', STR_PAD_LEFT);
+            return implode('-', $parts) . '-' . $nextSeq;
+        }
+
+        // Anything else is invalid
+        return false;
+    }
 
 
 
