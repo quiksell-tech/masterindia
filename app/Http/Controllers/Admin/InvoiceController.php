@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\MiInwardOrder;
 use App\Models\Admin\MiOrder;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\MiCreditnoteTransaction;
@@ -25,6 +26,27 @@ class InvoiceController extends Controller
         ])->findOrFail($orderId);
         $amountWords=$this-> amount_in_words_pdf($order->total_after_tax);
         $pdf = Pdf::loadView('order.tax-invoice', compact('order', 'amountWords'))
+            ->setPaper('A4', 'portrait');
+
+        return $pdf->download('Invoice-'.$order->order_invoice_number.'.pdf');
+        // OR ->stream() to preview in browser
+    }
+
+    public function inwardOrderTaxInvocie($orderId)
+    {
+        $order = MiInwardOrder::with([
+            'items',
+            'billFromParty',
+            'billFromAddress',
+            'billToParty',
+            'billToAddress',
+            'shipToParty',
+            'shipToAddress',
+            'dispatchFromParty',
+            'dispatchFromAddress',
+        ])->findOrFail($orderId);
+        $amountWords=$this-> amount_in_words_pdf($order->total_after_tax);
+        $pdf = Pdf::loadView('inwardorders.tax-invoice', compact('order', 'amountWords'))
             ->setPaper('A4', 'portrait');
 
         return $pdf->download('Invoice-'.$order->order_invoice_number.'.pdf');

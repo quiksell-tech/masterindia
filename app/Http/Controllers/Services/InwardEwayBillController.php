@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Services;
 
-use App\Models\Admin\MiOrderItem;
-use App\Models\MasterIndiaEwayBillTransaction;
+use App\Models\Admin\MiInwardOrderItem;
+use App\Models\MasterIndiaEwayBillInwardTxn;
 use App\Services\EwayBill\MasterIndiaService;
-use App\Models\Admin\MiOrder;
+use App\Models\Admin\MiInwardOrder;
 use App\Models\SystemParameter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,7 +13,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 
-class EwayBillController extends Controller
+class InwardEwayBillController extends Controller
 {
     protected $masterIndiaService;
     protected $masterIndiaEwayBillTransaction;
@@ -21,7 +21,7 @@ class EwayBillController extends Controller
     protected array $cancellationReasons;
     protected array $extensionReasons;
     protected array $vehicleReasons;
-    public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEwayBillTransaction $masterIndiaEwayBillTransaction)
+    public function __construct(MasterIndiaService $masterIndiaService, MasterIndiaEwayBillInwardTxn $masterIndiaEwayBillTransaction)
     {
 
         $this->masterIndiaService = $masterIndiaService;
@@ -39,8 +39,8 @@ class EwayBillController extends Controller
     {
 
 
-        $items = MiOrderItem::where('order_id', $order_id)->get();
-        $order = MiOrder::with([
+        $items = MiInwardOrderItem::where('order_id', $order_id)->get();
+        $order = MiInwardOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
             'billToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
             'shipToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -81,7 +81,7 @@ class EwayBillController extends Controller
         }
         if ($order) {
 
-             //validate GSTN
+            //validate GSTN
             if (!empty($order->billToParty->party_gstn)) {
                 if ($order->supply_type == 'outward') {
                     $valid = $this->masterIndiaService->getGSTINDetails([
@@ -333,7 +333,7 @@ class EwayBillController extends Controller
 
             return response()->json(['status' => 'error', 'message' => 'Invalid or Missing parameters', 'data' => []]);
         }
-        $order = MiOrder::with([
+        $order = MiInwardOrder::with([
 
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
 
@@ -399,7 +399,7 @@ class EwayBillController extends Controller
             ], 200);
         }
 
-        $order = MiOrder::with([
+        $order = MiInwardOrder::with([
             'billFromParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
             'billToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
             'shipToParty:party_id,party_trade_name,party_gstn,phone,party_legal_name',
@@ -419,7 +419,7 @@ class EwayBillController extends Controller
         }
 
 
-         if (empty( $order->eway_bill_no) ||  $order->eway_status !='C') {
+        if (empty( $order->eway_bill_no) ||  $order->eway_status !='C') {
 
             return response()->json(['status' => 'error', 'message' => 'EwayBill is not created', 'data' => []]);
         }
@@ -451,7 +451,7 @@ class EwayBillController extends Controller
                 "reason_code_for_vehicle_updation" => $this->vehicle_update_reason[$request->vehicle_update_reason] ?? 'Others',
                 "reason_for_vehicle_updation" => $request->vehicle_update_remarks,
                 'vehicle_type' => $order->vehicle_type,
-               'vehicle_number' => $order->vehicle_no,
+                'vehicle_number' => $order->vehicle_no,
                 "mode_of_transport" => $order->transportation_mode,
                 "data_source" => "erp"
             ];
@@ -585,7 +585,7 @@ class EwayBillController extends Controller
 
     public function getEwayBillDetails(Request $request,$order_id)
     {
-        $order = MiOrder::where('order_id', $order_id)->first();
+        $order = MiInwardOrder::where('order_id', $order_id)->first();
 
         if(empty($order)){
             return response()->json(['status' => 'error', 'message' => 'Order is not found', 'data' => []]);
@@ -603,7 +603,7 @@ class EwayBillController extends Controller
         var_dump($response);
     }
 
-    private function resolveTransactionType(MiOrder $order)
+    private function resolveTransactionType(MiInwardOrder $order)
     {
         $billFrom     = $order->billFromAddress?->address_id;
         $billTo       = $order->billToAddress?->address_id;

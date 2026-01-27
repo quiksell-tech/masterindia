@@ -9,11 +9,11 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title">
                     <i class="fas fa-file-invoice mr-1"></i>
-                    Outward Orders
+                   Inward Orders
                 </h3>
 
-                <a href="{{ route('orders.create') }}" class="btn btn-success btn-sm">
-                    <i class="fas fa-plus mr-1"></i> Add Outward Order
+                <a href="{{ route('inward.orders.create') }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-plus mr-1"></i> Add Inward Order
                 </a>
             </div>
 
@@ -70,7 +70,7 @@
                             </td>
 
                             <td>
-                                <a href="{{ route('orders.edit', $order->order_id) }}"
+                                <a href="{{ route('inward.orders.edit', $order->order_id) }}"
                                    class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i>
                                 </a>
@@ -83,7 +83,7 @@
                                             <i class="fas fa-file-invoice"></i> view
                                         </button>
 
-                                    <a href="{{ route('order.invoice.pdf', $order->order_id) }}"
+                                    <a href="{{ route('inward.order.invoice.pdf', $order->order_id) }}"
                                        class="btn btn-sm btn-danger">
                                         <i class="fas fa-file-pdf"></i> Tax PDF
                                     </a>

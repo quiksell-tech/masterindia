@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CompanyAddressController;
 use App\Http\Controllers\Admin\CreditnoteController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\InwardOrderController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\MiCompanyController;
 use App\Http\Controllers\Admin\MiPartyController;
@@ -135,6 +136,29 @@ Route::middleware('admin.auth')->group(function () {
 
         Route::get('/{order}/invoice-pdf', [InvoiceController::class, 'generateCreditNoteInvoce'])
             ->name('creditnote.invoice.pdf');
+    });
+
+    Route::prefix('inward-orders')->group(function () {
+        Route::get('/', [InwardOrderController::class, 'index'])->name('inward.orders.index');
+        Route::get('/create', [InwardOrderController::class, 'create'])->name('inward.orders.create');
+        Route::post('/store', [InwardOrderController::class, 'store'])->name('inward.orders.store');
+        Route::get('/{order}/edit', [InwardOrderController::class, 'edit'])->name('inward.orders.edit');
+        Route::post('/{order}/update', [InwardOrderController::class, 'update'])->name('inward.orders.update');
+
+        Route::get('/{order}/invoice-data', [InwardOrderController::class, 'invoiceData']);
+        Route::get('/{order}/generate-invoice', [InwardOrderController::class, 'generateInvoice']);
+
+        Route::get('/{order}/invoice-pdf', [InvoiceController::class, 'inwardOrderTaxInvocie'])
+            ->name('inward.order.invoice.pdf');
+
+        Route::post('/{order}/items', [OrderItemController::class, 'saveInwardOrderItems'])
+            ->name('inward.orders.items.save');
+
+        Route::delete('/items/{item}', [OrderItemController::class, 'destroy'])
+            ->name('inward.orders.items.delete');
+        // AJAX
+        Route::get('/party-search', [InwardOrderController::class, 'searchParty'])->name('party.search');
+        Route::get('/company-addresses/{companyId}/{partyId}', [InwardOrderController::class, 'companyAddresses']);
     });
 
 });

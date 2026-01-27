@@ -114,7 +114,14 @@
                         <a href="{{ route('orders.index') }}"
                            class="nav-link {{ request()->routeIs('orders.*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-map-marker-alt"></i>
-                            <p>Orders</p>
+                            <p>Outward Orders</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inward.orders.index') }}"
+                           class="nav-link {{ request()->routeIs('inward-orders.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-map-marker-alt"></i>
+                            <p>Inward Orders</p>
                         </a>
                     </li>
                     <li class="nav-item">

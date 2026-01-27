@@ -2,8 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Services\EwayBillController;
+use App\Http\Controllers\Services\InwardEInvoiceController;
+use App\Http\Controllers\Services\InwardEwayBillController;
 use App\Http\Controllers\Services\EInvoiceController;
 
+// For Outward Orders
+
+// E-way Bill
 Route::post(
     'eway-bill/{order_id}/generate',
     [EwayBillController::class, 'generateEwayBill']
@@ -51,4 +56,45 @@ Route::post(
     'creditnote-data/{order_id}/insert',
     [EInvoiceController::class, 'insertCreditNoteData']
 )->name('einvoce.creditnote');
+
+
+// For Inward Orders
+
+
+// E-Way Bill Routes
+Route::prefix('inward-eway-bill/{order_id}')
+    ->name('inward.eway-bill.')
+    ->group(function () {
+
+        Route::post('generate', [InwardEwayBillController::class, 'generateEwayBill'])
+            ->name('generate');
+
+        Route::post('cancel', [InwardEwayBillController::class, 'cancelEwayBill'])
+            ->name('cancel');
+
+        Route::post('update', [InwardEwayBillController::class, 'updateEwayBill'])
+            ->name('update');
+
+        Route::post('eway-bill-details', [InwardEwayBillController::class, 'getEwayBillDetails'])
+            ->name('details');
+    });
+
+
+// E-Invoice Routes
+Route::prefix('inward-einvoce/{order_id}')
+    ->name('inward.einvoice.')
+    ->group(function () {
+
+        Route::post('generate', [InwardEInvoiceController::class, 'generateEInvoice'])
+            ->name('generate');
+
+        Route::post('cancel', [InwardEInvoiceController::class, 'cancelEInvoice'])
+            ->name('cancel');
+
+        Route::post('creditnote-generate', [InwardEInvoiceController::class, 'generateCreditNote'])
+            ->name('creditnote.generate');
+
+        Route::post('creditnote-cancel', [InwardEInvoiceController::class, 'cancelCreditNote'])
+            ->name('creditnote.cancel');
+    });
 
