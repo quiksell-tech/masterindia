@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
     <script src="{{ asset('adminlte/dist/js/jquery.min.js') }}"></script>
-
+    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/favicon.png">
     <style>
         body {
             background: linear-gradient(135deg, #4e73df, #1cc88a);
