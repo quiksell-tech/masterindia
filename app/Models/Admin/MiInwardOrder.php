@@ -85,7 +85,7 @@ class MiInwardOrder extends Model
     }
     public function items()
     {
-        return $this->hasMany(MiOrderItem::class, 'order_id', 'order_id');
+        return $this->hasMany(MiInwardOrderItem::class, 'order_id', 'order_id');
     }
     public function getTotalSaleValueAttribute($value)
     {
@@ -106,6 +106,7 @@ class MiInwardOrder extends Model
     }
     public function getTotalTaxAttribute($value)
     {
+
         $totalSaleValue = 0;
         $totalTax       = 0;
         $totalAfterTax  = 0;
@@ -119,6 +120,7 @@ class MiInwardOrder extends Model
             $totalTax       += $taxAmount;
             $totalAfterTax  += $afterTax;
         }
+
         return $totalTax;
     }
 
