@@ -403,14 +403,14 @@
 
                     if (response.status === 'success') {
 
-                        showAjaxResponse(response, 'Credit Note Cancel');
+                        showAjaxResponse(response, 'Credit Note Created');
                         setTimeout(() => {
                             location.reload();
                         }, 1500);
 
                     }else {
 
-                        showAjaxResponse(response, 'Credit Note Cancel');
+                        showAjaxResponse(response, 'Credit Note Created');
                     }
                 },
                 error: function (xhr) {

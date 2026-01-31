@@ -169,7 +169,7 @@ class EInvoiceController extends Controller
             $afterTaxValue = $taxableAmount + $taxAmount;
 
 
-            if ($order->billFromAddress->state_code == $order->billToParty->state_code) {
+            if ($order->billFromAddress->state_code == $order->billToAddress->state_code) {
 
                 $igst_value = 0;
                 $cgst_value = $taxAmount / 2;

@@ -569,7 +569,7 @@
                                 <a href="javascript:void(0)"
                                    class="btn btn-sm btn-warning"
                                    onclick="createEInvoiceCreditNote({{$order->order_id}})">
-                                    <i class="fas fa-road"></i> Generate Credit Note
+                                    <i class="fas fa-road"></i> Generate Debit Note
                                 </a>
 
                                 <a href="javascript:void(0)"

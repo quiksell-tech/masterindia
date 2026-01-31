@@ -22,7 +22,7 @@
                         <label>Supply Type</label>
                         <select name="supply_type" id="supply_type" class="form-control mb-3">
                             <option value="outward" selected >Outward</option>
-                            <option value="inward">Inward</option>
+
                         </select>
                     </div>
 
